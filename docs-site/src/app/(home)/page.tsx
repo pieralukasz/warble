@@ -38,7 +38,7 @@ const features = [
   {
     icon: Cpu,
     title: "Parakeet v3, on-device",
-    text: "NVIDIA’s TDT model runs on Apple’s Neural Engine through FluidAudio. Downloaded once, then fully offline.",
+    text: "NVIDIA’s TDT model runs on Apple’s Neural Engine through FluidAudio. 25 European languages, all on your Mac. Downloaded once, then fully offline.",
   },
   {
     icon: AppWindow,
@@ -75,7 +75,8 @@ const privacyFacts = [
 ];
 
 const comparison = [
-  ["Price", "Free forever", "Monthly subscription"],
+  ["Price", "Free forever", "Subscription, or a capped free plan"],
+  ["Word limit", "None", "Weekly cap on free plans"],
   ["Where speech is processed", "On your Mac", "Remote servers"],
   ["Account", "None", "Required"],
   ["Works offline", "Yes", "No"],
@@ -187,6 +188,12 @@ export default function HomePage() {
             </table>
           </div>
         </div>
+        <p className="mt-6 text-sm text-fd-muted-foreground">
+          Warble is not the only app that keeps speech on your Mac. Handy,
+          VoiceInk, Superwhisper and MacWhisper run local models too. Warble’s
+          take is a native macOS 26 app on the Neural Engine, free and MIT
+          licensed, that does dictation and nothing else.
+        </p>
       </Section>
 
       <section className="mx-auto w-full max-w-5xl px-6 pb-24">
