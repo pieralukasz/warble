@@ -4,116 +4,10 @@ import CoreMedia
 import Foundation
 import ScreenCaptureKit
 
-private let transcriptionFormat = AVAudioFormat(
-    commonFormat: .pcmFormatFloat32,
-    sampleRate: 16_000,
-    channels: 1,
-    interleaved: false
-)!
-
-private let transcriptionFileSettings: [String: Any] = [
-    AVFormatIDKey: kAudioFormatLinearPCM,
-    AVSampleRateKey: 16_000,
-    AVNumberOfChannelsKey: 1,
-    AVLinearPCMBitDepthKey: 16,
-    AVLinearPCMIsFloatKey: false,
-    AVLinearPCMIsBigEndianKey: false,
-]
-
-private final class MonoAudioFileSink {
-    private let lock = NSLock()
-    private var file: AVAudioFile?
-    private var converter: AVAudioConverter?
-    private var converterInputFormat: AVAudioFormat?
-
-    init(url: URL) throws {
-        file = try AVAudioFile(
-            forWriting: url,
-            settings: transcriptionFileSettings,
-            commonFormat: .pcmFormatFloat32,
-            interleaved: false
-        )
-    }
-
-    func append(_ buffer: AVAudioPCMBuffer) {
-        lock.lock()
-        defer { lock.unlock() }
-        guard let file else { return }
-
-        if buffer.format == transcriptionFormat {
-            try? file.write(from: buffer)
-            return
-        }
-
-        if converter == nil || converterInputFormat != buffer.format {
-            converter = AVAudioConverter(from: buffer.format, to: transcriptionFormat)
-            converterInputFormat = buffer.format
-        }
-        guard let converter else { return }
-
-        let ratio = transcriptionFormat.sampleRate / buffer.format.sampleRate
-        let capacity = AVAudioFrameCount(ceil(Double(buffer.frameLength) * ratio)) + 32
-        guard let converted = AVAudioPCMBuffer(
-            pcmFormat: transcriptionFormat,
-            frameCapacity: capacity
-        ) else { return }
-
-        var suppliedInput = false
-        var conversionError: NSError?
-        converter.convert(to: converted, error: &conversionError) { _, status in
-            if suppliedInput {
-                status.pointee = .noDataNow
-                return nil
-            }
-            suppliedInput = true
-            status.pointee = .haveData
-            return buffer
-        }
-
-        if conversionError == nil && converted.frameLength > 0 {
-            try? file.write(from: converted)
-        }
-    }
-
-    func close() {
-        lock.lock()
-        file = nil
-        converter = nil
-        converterInputFormat = nil
-        lock.unlock()
-    }
-}
-
-private final class SystemAudioStreamOutput: NSObject, SCStreamOutput {
-    let sink: MonoAudioFileSink
-
-    init(sink: MonoAudioFileSink) {
-        self.sink = sink
-    }
-
-    func stream(
-        _ stream: SCStream,
-        didOutputSampleBuffer sampleBuffer: CMSampleBuffer,
-        of type: SCStreamOutputType
-    ) {
-        guard type == .audio, sampleBuffer.isValid else { return }
-
-        try? sampleBuffer.withAudioBufferList { audioBufferList, _ in
-            guard let description = sampleBuffer.formatDescription?.audioStreamBasicDescription,
-                  let format = AVAudioFormat(
-                    standardFormatWithSampleRate: description.mSampleRate,
-                    channels: description.mChannelsPerFrame
-                  ),
-                  let pcmBuffer = AVAudioPCMBuffer(
-                    pcmFormat: format,
-                    bufferListNoCopy: audioBufferList.unsafePointer
-                  ) else { return }
-            sink.append(pcmBuffer)
-        }
-    }
-}
-
 class AudioRecorder {
+    /// About 20 ms at 48 kHz, small enough for a smooth waveform.
+    static let TAP_BUFFER_FRAMES: AVAudioFrameCount = 1024
+
     private let systemAudioQueue = DispatchQueue(
         label: "io.github.pieralukasz.warble.system-audio",
         qos: .userInitiated
@@ -130,6 +24,8 @@ class AudioRecorder {
 
     var preferredDeviceID: AudioDeviceID?
     var captureSource: AudioCaptureSource = .microphone
+    /// Receives 0...1 loudness per audio buffer, on the audio thread.
+    var levelHandler: ((Float) -> Void)?
 
     /// Stop and release all capture resources. Call before changing source/device or on shutdown.
     func teardown() {
@@ -212,7 +108,7 @@ class AudioRecorder {
            let microphoneURL = microphoneOutputURL,
            let systemAudioURL = systemAudioOutputURL {
             do {
-                try mixAudioFiles(
+                try Self.mixAudioFiles(
                     microphoneURL: microphoneURL,
                     systemAudioURL: systemAudioURL,
                     outputURL: outputURL
@@ -246,9 +142,9 @@ class AudioRecorder {
             throw AudioCaptureError.microphoneEngineUnavailable
         }
 
-        let sink = try MonoAudioFileSink(url: outputURL)
+        let sink = try MonoAudioFileSink(url: outputURL, onLevel: levelHandler)
         let inputFormat = engine.inputNode.outputFormat(forBus: 0)
-        engine.inputNode.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { buffer, _ in
+        engine.inputNode.installTap(onBus: 0, bufferSize: Self.TAP_BUFFER_FRAMES, format: inputFormat) { buffer, _ in
             sink.append(buffer)
         }
 
@@ -308,7 +204,8 @@ class AudioRecorder {
         configuration.minimumFrameInterval = CMTime(value: 1, timescale: 1)
         configuration.queueDepth = 1
 
-        let sink = try MonoAudioFileSink(url: outputURL)
+        let meter = captureSource.includesMicrophone ? nil : levelHandler
+        let sink = try MonoAudioFileSink(url: outputURL, onLevel: meter)
         let output = SystemAudioStreamOutput(sink: sink)
         let stream = SCStream(filter: filter, configuration: configuration, delegate: nil)
         try stream.addStreamOutput(output, type: .audio, sampleHandlerQueue: systemAudioQueue)
@@ -340,71 +237,6 @@ class AudioRecorder {
                 directory.appendingPathComponent(".warble-\(token)-microphone.wav"),
                 directory.appendingPathComponent(".warble-\(token)-system.wav")
             )
-        }
-    }
-
-    private func mixAudioFiles(
-        microphoneURL: URL,
-        systemAudioURL: URL,
-        outputURL: URL
-    ) throws {
-        let microphoneFile = try AVAudioFile(
-            forReading: microphoneURL,
-            commonFormat: .pcmFormatFloat32,
-            interleaved: false
-        )
-        let systemFile = try AVAudioFile(
-            forReading: systemAudioURL,
-            commonFormat: .pcmFormatFloat32,
-            interleaved: false
-        )
-        let outputFile = try AVAudioFile(
-            forWriting: outputURL,
-            settings: transcriptionFileSettings,
-            commonFormat: .pcmFormatFloat32,
-            interleaved: false
-        )
-
-        let chunkSize: AVAudioFrameCount = 4096
-        let microphoneBuffer = AVAudioPCMBuffer(
-            pcmFormat: transcriptionFormat,
-            frameCapacity: chunkSize
-        )!
-        let systemBuffer = AVAudioPCMBuffer(
-            pcmFormat: transcriptionFormat,
-            frameCapacity: chunkSize
-        )!
-        let mixedBuffer = AVAudioPCMBuffer(
-            pcmFormat: transcriptionFormat,
-            frameCapacity: chunkSize
-        )!
-
-        while microphoneFile.framePosition < microphoneFile.length
-            || systemFile.framePosition < systemFile.length {
-            microphoneBuffer.frameLength = 0
-            systemBuffer.frameLength = 0
-            if microphoneFile.framePosition < microphoneFile.length {
-                try microphoneFile.read(into: microphoneBuffer, frameCount: chunkSize)
-            }
-            if systemFile.framePosition < systemFile.length {
-                try systemFile.read(into: systemBuffer, frameCount: chunkSize)
-            }
-
-            let frameCount = max(microphoneBuffer.frameLength, systemBuffer.frameLength)
-            guard frameCount > 0,
-                  let microphoneSamples = microphoneBuffer.floatChannelData?[0],
-                  let systemSamples = systemBuffer.floatChannelData?[0],
-                  let mixedSamples = mixedBuffer.floatChannelData?[0] else { break }
-
-            mixedBuffer.frameLength = frameCount
-            for index in 0..<Int(frameCount) {
-                let microphone = index < Int(microphoneBuffer.frameLength)
-                    ? microphoneSamples[index] : 0
-                let system = index < Int(systemBuffer.frameLength)
-                    ? systemSamples[index] : 0
-                mixedSamples[index] = max(-1, min(1, (microphone + system) * 0.5))
-            }
-            try outputFile.write(from: mixedBuffer)
         }
     }
 

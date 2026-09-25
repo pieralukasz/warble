@@ -32,23 +32,23 @@ func printUsage() {
 }
 
 func cmdStart() {
-    guard DaemonLock.acquire() else {
-        print("warble is already running; look for the waveform icon in the menu bar.")
+    guard PreviewMode.isActive || DaemonLock.acquire() else {
+        print("Warble is already running; look for the waveform icon in the menu bar.")
         return
     }
-
-    let app = NSApplication.shared
-    app.setActivationPolicy(.accessory)
-
-    let delegate = AppDelegate()
-    app.delegate = delegate
 
     signal(SIGINT) { _ in
         print("\nStopping warble...")
         exit(0)
     }
 
-    app.run()
+    MainActor.assumeIsolated {
+        let app = NSApplication.shared
+        app.setActivationPolicy(.accessory)
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.run()
+    }
 }
 
 func cmdSetHotkey(_ keyString: String) {

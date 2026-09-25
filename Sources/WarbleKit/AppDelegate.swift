@@ -1,483 +1,286 @@
 import AppKit
 
-public class AppDelegate: NSObject, NSApplicationDelegate {
-    var statusBar: StatusBarController!
-    var hotkeyManagers: [HotkeyManager] = []
-    var recorder: AudioRecorder!
-    var transcriber: ParakeetTranscriber!
-    var inserter: TextInserter!
-    var config: Config!
-    var recordingLifecycle = RecordingLifecycle()
-    var currentRecordingURL: URL?
-    private var recordingStartTask: Task<Bool, Never>?
-    private var sleepWakeObservers: [NSObjectProtocol] = []
+/// Wires the pieces together and walks the app from launch to listening:
+/// load settings, get permissions, load Parakeet, then watch the hotkey.
+@MainActor
+public final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// How often the Accessibility grant is re-checked while waiting for it.
+    static let ACCESSIBILITY_POLL: Duration = .milliseconds(500)
+
+    private let appState = AppState()
+    private let history: HistoryStore
+    private let dictionary: DictionaryStore
+    private let recorder = AudioRecorder()
+    private let sounds = SoundPlayer()
+    private let hotkeys = HotkeyController()
+    private let navigation = MainNavigation()
+    private let playback = AudioPlayback()
+
+    private var config = Config.load()
+    private var settings: SettingsModel!
+    private var dictation: DictationController!
+    private var statusBar: StatusBarController!
+    private var pill: RecordingPillController!
+    private var windows: WindowCoordinator!
+    private var modelLoader: ModelLoader!
+    private var sleepWake: SleepWakeObserver?
     private var hasShownScreenRecordingAlert = false
-    var isReady = false
-    public var lastTranscription: String?
+
+    public override init() {
+        if PreviewMode.isActive, let files = try? PreviewData.seed() {
+            history = HistoryStore(fileURL: files.history)
+            dictionary = DictionaryStore(fileURL: files.dictionary)
+        } else {
+            history = HistoryStore()
+            dictionary = DictionaryStore()
+        }
+        super.init()
+    }
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
-        statusBar = StatusBarController()
-        recorder = AudioRecorder()
-        registerSleepWakeObservers()
-
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            self?.setup()
+        settings = SettingsModel(config: config, persists: !PreviewMode.isActive) { [weak self] in self?.apply($0) }
+        dictation = DictationController(
+            dependencies: .init(appState: appState, history: history, dictionary: dictionary, recorder: recorder, sounds: sounds),
+            config: config,
+            transcriber: ParakeetTranscriber(language: config.language)
+        )
+        dictation.onCaptureFailure = { [weak self] in self?.presentCaptureFailure($0) }
+        recorder.levelHandler = { [appState] level in
+            Task { @MainActor in appState.pushLevel(level) }
         }
+        modelLoader = ModelLoader(appState: appState)
+        windows = WindowCoordinator(environment: makeEnvironment())
+        pill = RecordingPillController(appState: appState)
+        statusBar = StatusBarController(appState: appState, history: history, actions: .init(
+            openMain: { [weak self] in self?.windows.showMain() },
+            openSettings: { [weak self] in self?.windows.showMain(section: .settings) },
+            selectLanguage: { [weak self] code in self?.settings.update { $0.language = code } }
+        ))
+        sleepWake = SleepWakeObserver(
+            willSleep: { [weak self] in self?.dictation.cancelForSleep() },
+            didWake: { [weak self] in self?.configureRecorder(reload: true) }
+        )
+
+        configureFeedback()
+        configureRecorder(reload: false)
+        migrateAudioDeviceUIDIfNeeded()
+        if Config.effectiveMaxRecordings(config.maxRecordings) == 0 {
+            RecordingStore.deleteAllRecordings()
+        }
+
+        if let scene = PreviewMode.scene {
+            runPreview(scene)
+            return
+        }
+        let needsOnboarding = !(config.hasCompletedOnboarding?.value ?? false)
+        if needsOnboarding { windows.showOnboarding() }
+        Task { await startUp(askForPermissions: !needsOnboarding) }
     }
 
     public func applicationWillTerminate(_ notification: Notification) {
-        recordingStartTask?.cancel()
-        recorder?.teardown()
-        unregisterSleepWakeObservers()
+        recorder.teardown()
     }
 
-    private func setup() {
-        do {
-            try setupInner()
-        } catch {
-            print("Fatal setup error: \(error.localizedDescription)")
+    /// Reopening the app from Finder or Spotlight shows the main window.
+    public func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        if !hasVisibleWindows { windows.showMain() }
+        return true
+    }
+
+    // MARK: - Start-up
+
+    private func startUp(askForPermissions: Bool) async {
+        if askForPermissions { await requestPermissions() }
+        async let modelReady = modelLoader.load(using: dictation.transcriber)
+        await waitForAccessibility()
+        guard await modelReady else {
+            appState.transition(to: .error("Speech model unavailable"))
+            return
+        }
+        startListening()
+    }
+
+    /// Returning users skip onboarding, so ask for anything that was revoked since.
+    private func requestPermissions() async {
+        let source = config.audioCaptureSource
+        await Task.detached {
+            if source.includesMicrophone { Permissions.ensureMicrophone() }
+            if source.includesSystemAudio { Permissions.ensureScreenRecording() }
+        }.value
+        if !AXIsProcessTrusted() {
+            Permissions.promptAccessibility()
         }
     }
 
-    private func setupInner() throws {
-        config = Config.load()
-        inserter = TextInserter()
-        migrateAudioDeviceUIDIfNeeded()
+    private func waitForAccessibility() async {
+        guard !AXIsProcessTrusted() else { return }
+        appState.transition(to: .needsAccessibility)
+        while !AXIsProcessTrusted() {
+            try? await Task.sleep(for: Self.ACCESSIBILITY_POLL)
+        }
+        appState.transition(to: .preparing)
+    }
+
+    private func startListening() {
+        hotkeys.listen(
+            to: config.hotkeys,
+            onKeyDown: { [weak self] in self?.dictation.handleKeyDown() },
+            onKeyUp: { [weak self] in self?.dictation.handleKeyUp() }
+        )
+        appState.transition(to: .idle)
+        print("Warble v\(AppInfo.version) ready · hotkey \(config.hotkeySummary()) · Parakeet v3")
+    }
+
+    private func retryModel() {
+        Task {
+            guard await modelLoader.load(using: dictation.transcriber) else { return }
+            if AXIsProcessTrusted() { startListening() }
+        }
+    }
+
+    // MARK: - Preview
+
+    private func runPreview(_ scene: PreviewMode.Scene) {
+        appState.model = .ready
+        appState.transition(to: .idle)
+        let window: NSWindow
+        switch scene {
+        case .main(let name):
+            window = windows.showMain(section: name.section)
+        case .onboarding(let step):
+            window = windows.showOnboarding(startingAt: OnboardingStep(rawValue: step) ?? .welcome)
+        case .pill(let name):
+            appState.transition(to: name.phase)
+            if name == .recording { simulateSpeech() }
+            window = pill.panel
+        }
+        print("Preview window \(window.windowNumber)")
+    }
+
+    /// A speech-like level pattern so the waveform has shape in screenshots.
+    private func simulateSpeech() {
+        for index in 0..<AppState.LEVEL_HISTORY_COUNT {
+            let envelope = 0.45 + 0.4 * sin(Double(index) * 0.55) * sin(Double(index) * 0.21)
+            appState.pushLevel(Float(max(0.08, envelope)))
+        }
+    }
+
+    // MARK: - Settings
+
+    private func apply(_ newConfig: Config) {
+        let previous = config
+        config = newConfig
+        dictation.config = newConfig
+        configureFeedback()
+
+        if previous.language != newConfig.language {
+            dictation.transcriber = ParakeetTranscriber(language: newConfig.language)
+        }
+        let deviceChanged = previous.audioInputDeviceUID != newConfig.audioInputDeviceUID
+        let sourceChanged = previous.audioCaptureSource != newConfig.audioCaptureSource
+        if deviceChanged || sourceChanged {
+            configureRecorder(reload: true)
+        }
+        if sourceChanged && newConfig.audioCaptureSource.includesSystemAudio && !Permissions.ensureScreenRecording() {
+            presentCaptureFailure(AudioCaptureError.screenRecordingPermissionRequired)
+        }
+        if previous.hotkeys != newConfig.hotkeys && hotkeys.isListening {
+            startListening()
+        }
+        dictation.inserter = TextInserter()
+    }
+
+    private func configureFeedback() {
+        appState.hotkeySummary = HotkeyLabel.describe(config.hotkeys)
+        sounds.isEnabled = config.shouldPlaySounds?.value ?? true
+        pill?.isEnabled = config.shouldShowRecordingPill?.value ?? true
+    }
+
+    private func configureRecorder(reload: Bool) {
         recorder.preferredDeviceID = AudioDeviceManager.resolveConfiguredDeviceID(
             uid: config.audioInputDeviceUID,
             legacyID: config.audioInputDeviceID
         )
         recorder.captureSource = config.audioCaptureSource
-        if Config.effectiveMaxRecordings(config.maxRecordings) == 0 {
-            RecordingStore.deleteAllRecordings()
-        }
-        transcriber = makeParakeetTranscriber(for: config)
-
-        DispatchQueue.main.async {
-            self.statusBar.reprocessHandler = { [weak self] url in
-                self?.reprocess(audioURL: url)
-            }
-            self.statusBar.onConfigChange = { [weak self] newConfig in
-                self?.applyConfigChange(newConfig)
-            }
-            self.statusBar.buildMenu()
-        }
-
-        if !AXIsProcessTrusted() {
-            DispatchQueue.main.async {
-                self.statusBar.state = .waitingForPermission
-                self.statusBar.buildMenu()
-            }
-        }
-
-        if config.audioCaptureSource.includesMicrophone {
-            Permissions.ensureMicrophone()
-        }
-
-        if config.audioCaptureSource.includesSystemAudio {
-            Permissions.ensureScreenRecording()
-        }
-
-        if !AXIsProcessTrusted() {
-            print("Accessibility: not granted")
-            Permissions.promptAccessibility()
-            Permissions.openAccessibilitySettings()
-            print("Waiting for Accessibility permission...")
-            while !AXIsProcessTrusted() {
-                Thread.sleep(forTimeInterval: 0.5)
-            }
-            print("Accessibility: granted")
-        } else {
-            print("Accessibility: granted")
-        }
-
-        DispatchQueue.main.async {
-            self.statusBar.state = .downloading
-            self.statusBar.updateDownloadProgress("Loading Parakeet v3...")
-        }
-        print("Loading Parakeet v3...")
-        try transcriber.prepare()
-        DispatchQueue.main.async {
-            self.statusBar.updateDownloadProgress(nil)
-        }
-        print("Parakeet v3 ready.")
-
-        DispatchQueue.main.async { [weak self] in
-            self?.startListening()
-        }
+        if reload { recorder.reload() }
     }
 
-    private func startListening() {
-        for m in hotkeyManagers { m.stop() }
-        hotkeyManagers = []
-        for hk in config.hotkeys {
-            let manager = HotkeyManager(
-                keyCode: hk.keyCode,
-                modifiers: hk.modifierFlags
-            )
-            manager.start(
-                onKeyDown: { [weak self] in
-                    self?.handleKeyDown()
-                },
-                onKeyUp: { [weak self] in
-                    self?.handleKeyUp()
-                }
-            )
-            hotkeyManagers.append(manager)
-        }
-
-        isReady = true
-        statusBar.state = .idle
-        statusBar.buildMenu()
-
-        let hotkeyDesc = config.hotkeySummary()
-        print("warble v\(AppInfo.version)")
-        print("Hotkey: \(hotkeyDesc)")
-        print("Engine: Parakeet v3")
-        print("Ready.")
-
-        promptForLaunchAtLoginIfNeeded()
-    }
-
-    /// Offers to install the login LaunchAgent the first time the daemon reaches
-    /// a working state. Asking earlier would compete with the Accessibility and
-    /// Microphone prompts, and asking after a failed start would be noise.
-    private func promptForLaunchAtLoginIfNeeded() {
-        guard !(config.launchAtLoginPrompted?.value ?? false),
-              !LaunchAtLogin.isEnabled,
-              LaunchAtLogin.defaultExecutablePath() != nil else { return }
-
-        let alert = NSAlert()
-        alert.messageText = "Start Warble at login?"
-        alert.informativeText = "Warble can start automatically when you log in, so the "
-            + "dictation hotkey is always ready. You can change this any time from the menu "
-            + "bar icon."
-        alert.addButton(withTitle: "Start at Login")
-        alert.addButton(withTitle: "Not Now")
-
-        NSApp.activate(ignoringOtherApps: true)
-        let wantsLaunchAtLogin = alert.runModal() == .alertFirstButtonReturn
-
-        if wantsLaunchAtLogin {
-            do {
-                try LaunchAtLogin.enable()
-            } catch {
-                print("Could not enable launch at login: \(error.localizedDescription)")
-            }
-        }
-
-        var stored = Config.load()
-        stored.launchAtLoginPrompted = FlexBool(true)
-        do {
-            try stored.save()
-            config = stored
-        } catch {
-            print("Could not record the launch-at-login answer: \(error.localizedDescription)")
-        }
-
-        statusBar.buildMenu()
-    }
-
-    public func reloadConfig() {
-        let newConfig = Config.load()
-        applyConfigChange(newConfig)
-    }
-
-    /// Configs written by older versions store only the numeric AudioDeviceID,
-    /// which is not stable across reboots or device replugs. If that ID still
-    /// refers to a device, persist its UID so the selection survives.
+    /// Older configs stored only the numeric device ID, which changes across reboots.
     private func migrateAudioDeviceUIDIfNeeded() {
         guard config.audioInputDeviceUID == nil,
               let legacyID = config.audioInputDeviceID,
               let uid = AudioDeviceManager.getDeviceUID(deviceID: legacyID) else { return }
-        config.audioInputDeviceUID = uid
-        try? config.save()
+        settings.update { $0.audioInputDeviceUID = uid }
     }
 
-    func applyConfigChange(_ newConfig: Config) {
-        guard isReady else { return }
-        let newDeviceID = AudioDeviceManager.resolveConfiguredDeviceID(
-            uid: newConfig.audioInputDeviceUID,
-            legacyID: newConfig.audioInputDeviceID
+    // MARK: - Actions from the UI
+
+    private func makeEnvironment() -> AppEnvironment {
+        AppEnvironment(
+            appState: appState,
+            history: history,
+            dictionary: dictionary,
+            settings: settings,
+            navigation: navigation,
+            playback: playback,
+            actions: AppActions(
+                retryModel: { [weak self] in self?.retryModel() },
+                retranscribe: { [weak self] url in self?.dictation.retranscribe(audioURL: url) },
+                pauseHotkeys: { [weak self] isPaused in self?.pauseHotkeys(isPaused) },
+                openOnboarding: { [weak self] in self?.windows.showOnboarding() },
+                finishOnboarding: { [weak self] in self?.finishOnboarding() },
+                setLaunchAtLogin: { [weak self] isOn in self?.setLaunchAtLogin(isOn) ?? false }
+            )
         )
-        let deviceChanged = recorder.preferredDeviceID != newDeviceID
-        let sourceChanged = recorder.captureSource != newConfig.audioCaptureSource
-        config = newConfig
-        recorder.preferredDeviceID = newDeviceID
-        recorder.captureSource = newConfig.audioCaptureSource
-        if sourceChanged && newConfig.audioCaptureSource.includesMicrophone {
-            Permissions.ensureMicrophone()
-        }
-        let screenRecordingMissing = sourceChanged
-            && newConfig.audioCaptureSource.includesSystemAudio
-            && !Permissions.ensureScreenRecording()
-        if deviceChanged || sourceChanged {
-            recorder.reload()
-        }
-        transcriber = makeParakeetTranscriber(for: config)
-        inserter = TextInserter()
+    }
 
-        for m in hotkeyManagers { m.stop() }
-        hotkeyManagers = []
-        for hk in config.hotkeys {
-            let manager = HotkeyManager(
-                keyCode: hk.keyCode,
-                modifiers: hk.modifierFlags
-            )
-            manager.start(
-                onKeyDown: { [weak self] in self?.handleKeyDown() },
-                onKeyUp: { [weak self] in self?.handleKeyUp() }
-            )
-            hotkeyManagers.append(manager)
-        }
-
-        statusBar.buildMenu()
-
-        let hotkeyDesc = config.hotkeySummary()
-        print("Config updated: engine=parakeet lang=\(config.language) source=\(config.audioCaptureSource.rawValue) hotkey=\(hotkeyDesc)")
-
-        if screenRecordingMissing {
-            presentCaptureFailure(AudioCaptureError.screenRecordingPermissionRequired)
+    private func pauseHotkeys(_ isPaused: Bool) {
+        if isPaused {
+            hotkeys.stop()
+        } else if appState.model.isReady && AXIsProcessTrusted() {
+            startListening()
         }
     }
 
-    private func makeParakeetTranscriber(for config: Config) -> ParakeetTranscriber {
-        let transcriber = ParakeetTranscriber(language: config.language)
-        transcriber.spokenPunctuation = config.spokenPunctuation?.value ?? false
-        return transcriber
+    private func finishOnboarding() {
+        settings.update {
+            $0.hasCompletedOnboarding = FlexBool(true)
+            $0.launchAtLoginPrompted = FlexBool(true)
+        }
+        windows.closeOnboarding()
+        windows.showMain(section: .home)
     }
 
-    private func handleKeyDown() {
-        guard isReady else { return }
-
-        let isToggle = config.toggleMode?.value ?? false
-
-        switch recordingLifecycle.keyDown(toggleMode: isToggle) {
-        case .startRecording:
-            handleRecordingStart()
-        case .stopRecording:
-            handleRecordingStop()
-        case .none, .cancelRecording, .prepareRecorder:
-            break
+    private func setLaunchAtLogin(_ isOn: Bool) -> Bool {
+        do {
+            if isOn { try LaunchAtLogin.enable() } else { try LaunchAtLogin.disable() }
+        } catch {
+            presentAlert(title: "Could not change the login setting", message: error.localizedDescription)
         }
+        return LaunchAtLogin.isEnabled
     }
 
-    private func handleKeyUp() {
-        guard isReady else { return }
-
-        let isToggle = config.toggleMode?.value ?? false
-
-        if recordingLifecycle.keyUp(toggleMode: isToggle) == .stopRecording {
-            handleRecordingStop()
-        }
-    }
-
-    private func handleRecordingStart() {
-        statusBar.state = .recording
-        let outputURL: URL
-        if Config.effectiveMaxRecordings(config.maxRecordings) == 0 {
-            outputURL = RecordingStore.tempRecordingURL()
-        } else {
-            outputURL = RecordingStore.newRecordingURL()
-        }
-        currentRecordingURL = outputURL
-
-        recordingStartTask = Task { [weak self] in
-            guard let self else { return false }
-            do {
-                try await self.recorder.startRecording(to: outputURL)
-                return true
-            } catch {
-                DispatchQueue.main.async {
-                    print("Error: \(error.localizedDescription)")
-                    self.recordingLifecycle.recordingStartFailed()
-                    RecordingCancellation.discardTrackedPartialRecording(&self.currentRecordingURL)
-                    self.presentCaptureFailure(error)
-                }
-                return false
-            }
-        }
-    }
-
-    /// The status bar renders a single short line, so the full remedy goes into an
-    /// alert. It is shown once per launch because every hotkey press hits the same
-    /// missing grant and would otherwise stack modals.
+    /// Shown once per launch: every hotkey press would otherwise hit the same missing grant.
     private func presentCaptureFailure(_ error: Error) {
-        let captureError = error as? AudioCaptureError
-        statusBar.state = .error(captureError?.shortDescription ?? error.localizedDescription)
-        statusBar.buildMenu()
-        clearErrorStateAfterDelay()
-
-        guard captureError == .screenRecordingPermissionRequired,
+        guard (error as? AudioCaptureError) == .screenRecordingPermissionRequired,
               !hasShownScreenRecordingAlert else { return }
         hasShownScreenRecordingAlert = true
-
-        let alert = NSAlert()
-        alert.messageText = "Screen Recording permission required"
-        alert.informativeText = AudioCaptureError.screenRecordingPermissionRequired.localizedDescription
-        alert.addButton(withTitle: "Open System Settings")
-        alert.addButton(withTitle: "Later")
-
-        NSApp.activate(ignoringOtherApps: true)
-        if alert.runModal() == .alertFirstButtonReturn {
-            Permissions.openScreenRecordingSettings()
-        }
-    }
-
-    private func clearErrorStateAfterDelay() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { [weak self] in
-            guard let self, case .error = self.statusBar.state else { return }
-            self.statusBar.state = .idle
-            self.statusBar.buildMenu()
-        }
-    }
-
-    private func handleRecordingStop() {
-        statusBar.state = .transcribing
-        let startTask = recordingStartTask
-        recordingStartTask = nil
-
-        Task { [weak self] in
-            guard let self else { return }
-            guard await startTask?.value ?? true,
-                  let audioURL = await self.recorder.stopRecording() else {
-                DispatchQueue.main.async {
-                    RecordingCancellation.discardTrackedPartialRecording(&self.currentRecordingURL)
-                    if case .error = self.statusBar.state { return }
-                    self.statusBar.state = .idle
-                    self.statusBar.buildMenu()
-                }
-                return
-            }
-
-            self.currentRecordingURL = nil
-            let maxRecordings = Config.effectiveMaxRecordings(self.config.maxRecordings)
-            defer {
-                if maxRecordings == 0 {
-                    try? FileManager.default.removeItem(at: audioURL)
-                }
-            }
-            do {
-                let raw = try self.transcriber.transcribe(audioURL: audioURL)
-                let text = (self.config.spokenPunctuation?.value ?? false) ? TextPostProcessor.process(raw) : raw
-                if maxRecordings > 0 {
-                    RecordingStore.prune(maxCount: maxRecordings)
-                }
-                DispatchQueue.main.async {
-                    if !text.isEmpty {
-                        self.lastTranscription = text
-                        self.inserter.insert(text: text)
-                    }
-                    self.statusBar.state = .idle
-                    self.statusBar.buildMenu()
-                }
-            } catch {
-                if maxRecordings > 0 {
-                    RecordingStore.prune(maxCount: maxRecordings)
-                }
-                DispatchQueue.main.async {
-                    print("Error: \(error.localizedDescription)")
-                    self.statusBar.state = .error(error.localizedDescription)
-                    self.statusBar.buildMenu()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                        if case .error = self.statusBar.state {
-                            self.statusBar.state = .idle
-                            self.statusBar.buildMenu()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    func handleSystemWillSleep() {
-        guard recordingLifecycle.systemWillSleep() == .cancelRecording else { return }
-
-        recordingStartTask?.cancel()
-        recordingStartTask = nil
-        recorder.teardown()
-        RecordingCancellation.discardTrackedPartialRecording(&currentRecordingURL)
-        resetRecordingStatusToIdleIfNeeded()
-    }
-
-    func handleSystemDidWake() {
-        guard recordingLifecycle.systemDidWake(isReady: isReady) == .prepareRecorder else { return }
-
-        recorder.preferredDeviceID = AudioDeviceManager.resolveConfiguredDeviceID(
-            uid: config.audioInputDeviceUID,
-            legacyID: config.audioInputDeviceID
+        let opensSettings = presentAlert(
+            title: "Screen Recording permission required",
+            message: AudioCaptureError.screenRecordingPermissionRequired.localizedDescription,
+            primary: "Open System Settings"
         )
-        recorder.captureSource = config.audioCaptureSource
-        recorder.reload()
+        if opensSettings { Permissions.openScreenRecordingSettings() }
     }
 
-    private func registerSleepWakeObservers() {
-        guard sleepWakeObservers.isEmpty else { return }
-
-        let center = NSWorkspace.shared.notificationCenter
-        sleepWakeObservers = [
-            center.addObserver(
-                forName: NSWorkspace.willSleepNotification,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                self?.handleSystemWillSleep()
-            },
-            center.addObserver(
-                forName: NSWorkspace.didWakeNotification,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                self?.handleSystemDidWake()
-            },
-        ]
-    }
-
-    private func unregisterSleepWakeObservers() {
-        let center = NSWorkspace.shared.notificationCenter
-        for observer in sleepWakeObservers {
-            center.removeObserver(observer)
-        }
-        sleepWakeObservers = []
-    }
-
-    private func resetRecordingStatusToIdleIfNeeded() {
-        guard case .recording = statusBar.state else { return }
-        statusBar.state = .idle
-        statusBar.buildMenu()
-    }
-
-    public func reprocess(audioURL: URL) {
-        guard case .idle = statusBar.state else { return }
-
-        statusBar.state = .transcribing
-
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
-            do {
-                let raw = try self.transcriber.transcribe(audioURL: audioURL)
-                let text = (self.config.spokenPunctuation?.value ?? false) ? TextPostProcessor.process(raw) : raw
-                DispatchQueue.main.async {
-                    if !text.isEmpty {
-                        self.lastTranscription = text
-                        NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(text, forType: .string)
-                        self.statusBar.state = .copiedToClipboard
-                        self.statusBar.buildMenu()
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            self.statusBar.state = .idle
-                            self.statusBar.buildMenu()
-                        }
-                    } else {
-                        self.statusBar.state = .idle
-                    }
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    print("Reprocess error: \(error.localizedDescription)")
-                    self.statusBar.state = .idle
-                }
-            }
-        }
+    @discardableResult
+    private func presentAlert(title: String, message: String, primary: String = "OK") -> Bool {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: primary)
+        if primary != "OK" { alert.addButton(withTitle: "Later") }
+        NSApp.activate()
+        return alert.runModal() == .alertFirstButtonReturn
     }
 }

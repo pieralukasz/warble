@@ -27,7 +27,11 @@ struct Permissions {
     }
 
     static func openAccessibilitySettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+        openSettingsPane("Privacy_Accessibility")
+    }
+
+    static func openSettingsPane(_ anchor: String) {
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?\(anchor)") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -52,8 +56,6 @@ struct Permissions {
     }
 
     static func openScreenRecordingSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
-            NSWorkspace.shared.open(url)
-        }
+        openSettingsPane("Privacy_ScreenCapture")
     }
 }

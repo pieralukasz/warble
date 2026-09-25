@@ -10,9 +10,11 @@ public final class ParakeetTranscriber: @unchecked Sendable {
         self.languageCode = language
     }
 
-    public func prepare() throws {
-        try Self.engine.prepare()
+    public func prepare(progress: ProgressHandler? = nil) throws {
+        try Self.engine.prepare(progress: progress)
     }
+
+    public static var isModelLoaded: Bool { engine.isLoaded }
 
     public func transcribe(audioURL: URL) throws -> String {
         try Self.engine.transcribe(audioURL: audioURL, languageCode: languageCode)
@@ -57,12 +59,18 @@ private final class ParakeetEngine: @unchecked Sendable {
     private let preparationLock = NSLock()
     private var manager: AsrManager?
 
-    func prepare() throws {
-        _ = try preparedManager()
+    var isLoaded: Bool {
+        preparationLock.lock()
+        defer { preparationLock.unlock() }
+        return manager != nil
+    }
+
+    func prepare(progress: ProgressHandler?) throws {
+        _ = try preparedManager(progress: progress)
     }
 
     func transcribe(audioURL: URL, languageCode: String) throws -> String {
-        let manager = try preparedManager()
+        let manager = try preparedManager(progress: nil)
         let language = languageCode == "auto" ? nil : Language(rawValue: languageCode)
 
         return try blockingAwait {
@@ -77,7 +85,7 @@ private final class ParakeetEngine: @unchecked Sendable {
         }
     }
 
-    private func preparedManager() throws -> AsrManager {
+    private func preparedManager(progress: ProgressHandler?) throws -> AsrManager {
         preparationLock.lock()
         defer { preparationLock.unlock() }
 
@@ -87,7 +95,8 @@ private final class ParakeetEngine: @unchecked Sendable {
             let version = AsrModelVersion.v3
             let models = try await AsrModels.downloadAndLoad(
                 version: version,
-                encoderPrecision: .int8
+                encoderPrecision: .int8,
+                progressHandler: progress
             )
             let config = ASRConfig(
                 tdtConfig: TdtConfig(blankId: version.blankId),
