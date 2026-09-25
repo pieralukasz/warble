@@ -138,6 +138,10 @@ scripts/capture-screenshots.sh                                         # refresh
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and the [architecture page](https://warble.lucaspiera.com/docs/architecture).
 
+## Recording calls
+
+Warble is for short dictation. To record whole calls and meetings with the speakers told apart, see [EchoPad](https://github.com/pieralukasz/echopad), built on the same Parakeet model.
+
 ## Credits
 
 Warble grew out of [open-wispr](https://github.com/human37/open-wispr) by human37 (MIT). Speech recognition is NVIDIA Parakeet TDT v3 via [FluidAudio](https://github.com/FluidInference/FluidAudio) (Apache 2.0).

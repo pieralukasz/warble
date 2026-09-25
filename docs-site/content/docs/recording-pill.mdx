@@ -14,6 +14,19 @@ It is one piece of glass that changes shape rather than a set of separate views:
 | Listening | A red dot and bars that follow your voice. |
 | Transcribing | Three rippling dots while Parakeet works. |
 | Typed | A green check for a moment, then the pill fades. |
-| Problem | A warning with a short reason, such as a missing permission or a recording with no sound in it. |
+| Problem | A red-tinted pill with a short reason, and a low tone if sounds are on. It clears after five seconds. |
+
+### When nothing was typed
+
+A dictation that produces no text says why instead of quietly disappearing:
+
+| Message | Meaning |
+| --- | --- |
+| No sound from the microphone | The recording was silent. Check the input in **Settings → Audio**. |
+| No sound from system audio | **Listen to** is set to system audio and nothing was playing. |
+| No sound recorded | Neither the microphone nor system audio had sound. |
+| No words recognized | There was sound, but Parakeet heard no words in it. |
+| Screen Recording permission needed | System audio capture was refused. See [Troubleshooting](/docs/troubleshooting). |
+| Microphone unavailable | macOS would not start the microphone. |
 
 Turn it off in **Settings → Feedback → Show recording pill**. The menu bar icon animates the same states either way.
