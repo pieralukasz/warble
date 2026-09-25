@@ -1,0 +1,25 @@
+---
+title: Command line
+description: The warble command for scripting and quick changes.
+---
+
+`scripts/install.sh` links `warble` into `~/.local/bin`. The command talks to the same config file as the app.
+
+| Command | What it does |
+| --- | --- |
+| `warble start` | Start the dictation app (what opening Warble.app does). |
+| `warble status` | Show hotkey, language, audio input, mode and autostart. |
+| `warble set-hotkey <key>` | Set the hotkey, for example `globe`, `rightoption`, `f5` or `ctrl+space`. |
+| `warble get-hotkey` | Print the current hotkey. |
+| `warble set-language <code>` | Set the language, for example `pl`, `en` or `auto`. |
+| `warble transcribe-file <path>` | Transcribe an audio file with Parakeet and print the text. |
+| `warble enable-autostart` | Start Warble at login. |
+| `warble disable-autostart` | Stop starting Warble at login. |
+
+Settings changed from the command line are picked up the next time Warble starts.
+
+```bash
+warble set-hotkey rightoption
+warble set-language pl
+warble transcribe-file ~/Downloads/voice-memo.m4a
+```

@@ -1,0 +1,41 @@
+---
+title: Troubleshooting
+description: Fixes for the problems people actually hit.
+---
+
+<Accordions>
+<Accordion title="Nothing happens when I hold the key">
+
+Warble needs Accessibility access to see the key. Open **System Settings → Privacy & Security → Accessibility** and make sure Warble is on. The menu bar icon shows a lock while it waits for this.
+
+After rebuilding Warble from source, macOS can treat the new build as a different app. If the switch is on but nothing happens, remove Warble from the list with the minus button and add it again.
+
+</Accordion>
+<Accordion title="The fn key opens the emoji picker or Apple Dictation">
+
+In **System Settings → Keyboard**, set **Press 🌐 key to** to **Do Nothing**. Or pick another hotkey such as Right Option in Warble’s settings.
+
+</Accordion>
+<Accordion title="My text is typed twice">
+
+Another dictation app is listening to the same key. If you used open-wispr before, quit it (and remove its login item) before using Warble.
+
+</Accordion>
+<Accordion title="The model download failed">
+
+The first launch needs an internet connection to fetch Parakeet from Hugging Face. Check the connection and press **Try Again** on the Home screen or in setup.
+
+</Accordion>
+<Accordion title="Text appears in the wrong place or not at all">
+
+Warble pastes into whatever has keyboard focus when you release the key. Make sure the cursor is in a text field. Some password fields block pasting on purpose.
+
+</Accordion>
+<Accordion title="System audio is silent">
+
+Capturing system audio needs **Screen & System Audio Recording** permission. Grant it in System Settings, then quit and reopen Warble.
+
+</Accordion>
+</Accordions>
+
+Still stuck? [Open an issue](https://github.com/pieralukasz/open-wispr-parakeet/issues) with the output of `warble status`.

@@ -1,0 +1,66 @@
+---
+title: Installation
+description: Build Warble from source and install it in ~/Applications.
+---
+
+Warble is distributed as source for now. Building takes one command.
+
+## Requirements
+
+- macOS 26 or later.
+- Xcode 26 or the matching Command Line Tools (Swift 6.2).
+- About 500 MB of free space for the Parakeet model (`parakeet-tdt-0.6b-v3`, int8), downloaded on first launch.
+
+## Install
+
+<Steps>
+<Step>
+
+### Clone the repository
+
+```bash
+git clone https://github.com/pieralukasz/open-wispr-parakeet.git warble
+cd warble
+```
+
+</Step>
+<Step>
+
+### Build and install
+
+```bash
+scripts/install.sh
+```
+
+This builds a release binary, bundles `Warble.app`, copies it to `~/Applications` and links the `warble` command into `~/.local/bin`. Warble opens when it finishes.
+
+</Step>
+<Step>
+
+### Follow the setup window
+
+The first launch opens setup, which asks for the Microphone and Accessibility permissions and downloads Parakeet. See [Your first dictation](/docs/first-run).
+
+</Step>
+</Steps>
+
+<Callout title="Coming from open-wispr?">
+  Warble copies `~/.config/open-wispr/config.json` on first launch, so your hotkey, language and microphone carry over. Quit the old app before using Warble, because both listen to the same key.
+</Callout>
+
+## Start at login
+
+Turn on **Settings → System → Start Warble at login**, or run `warble enable-autostart`.
+
+## Update
+
+Pull the latest changes and run `scripts/install.sh` again. Your settings, history and dictionary are kept.
+
+## Uninstall
+
+```bash
+scripts/uninstall.sh          # removes the app, keeps your data
+scripts/uninstall.sh --purge  # also deletes settings, history and dictionary
+```
+
+The Parakeet model lives in `~/Library/Application Support/FluidAudio` and is left in place, since other FluidAudio apps can share it.

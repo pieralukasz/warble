@@ -1,0 +1,23 @@
+{
+  "title": "Warble",
+  "pages": [
+    "index",
+    "installation",
+    "first-run",
+    "---Using Warble---",
+    "dictating",
+    "recording-pill",
+    "history",
+    "dictionary",
+    "settings",
+    "languages",
+    "---Reference---",
+    "cli",
+    "configuration",
+    "privacy",
+    "troubleshooting",
+    "---Project---",
+    "architecture",
+    "contributing"
+  ]
+}

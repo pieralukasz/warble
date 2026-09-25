@@ -3,57 +3,32 @@ name: CI
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
 
 jobs:
-  build:
-    runs-on: macos-15
+  app:
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
-
-      - name: Check for Swift changes
-        id: filter
-        run: |
-          CHANGED=$(gh pr diff ${{ github.event.pull_request.number }} --name-only --repo ${{ github.repository }})
-          if echo "$CHANGED" | grep -qE '\.(swift)$|^Package\.swift$'; then
-            echo "swift=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "swift=false" >> "$GITHUB_OUTPUT"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build
-        if: steps.filter.outputs.swift == 'true'
-        run: swift build -c release
-
-  unit-tests:
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check for Swift changes
-        id: filter
-        run: |
-          CHANGED=$(gh pr diff ${{ github.event.pull_request.number }} --name-only --repo ${{ github.repository }})
-          if echo "$CHANGED" | grep -qE '\.(swift)$|^Package\.swift$'; then
-            echo "swift=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "swift=false" >> "$GITHUB_OUTPUT"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Unit tests
-        if: steps.filter.outputs.swift == 'true'
         run: swift test
 
-  install-test:
-    runs-on: macos-15
+      - name: Release build and bundle
+        run: |
+          swift build -c release
+          scripts/bundle-app.sh .build/release/warble .build/Warble.app ci
+          plutil -lint .build/Warble.app/Contents/Info.plist
+
+  docs:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs-site
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install shellcheck
-        run: brew install shellcheck
-
-      - name: Install smoke test
-        run: bash scripts/test-install.sh
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run types:check
+      - run: bun run build

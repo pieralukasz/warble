@@ -1,0 +1,48 @@
+---
+title: Dictating
+description: Hold to talk, toggle mode, and what happens between key press and typed text.
+---
+
+## Hold to talk
+
+Hold the hotkey, speak, release. Warble plays a soft tick when it starts listening and a pop when it stops, then types the text at the cursor.
+
+Taps shorter than a quarter of a second are ignored, so brushing the key does nothing.
+
+## Toggle mode
+
+For long dictation, switch **Settings → Dictation → Mode** to **Press to start, press to stop**. Press once to start and again to finish.
+
+## What happens to your words
+
+<Steps>
+<Step>Audio is recorded as 16 kHz mono while the key is held.</Step>
+<Step>Parakeet TDT v3 transcribes it on the Neural Engine.</Step>
+<Step>If spoken punctuation is on, words like “comma” become punctuation.</Step>
+<Step>Your [dictionary](/docs/dictionary) fixes spellings and expands shortcuts.</Step>
+<Step>The text is pasted at the cursor, and your clipboard is restored a second later.</Step>
+<Step>The dictation is saved to [History](/docs/history).</Step>
+</Steps>
+
+## Spoken punctuation
+
+Turn on **Settings → Dictation → Spoken punctuation** to say punctuation out loud.
+
+| Say | Get |
+| --- | --- |
+| period, full stop | `.` |
+| comma | `,` |
+| question mark | `?` |
+| exclamation mark, exclamation point | `!` |
+| colon / semicolon | `:` / `;` |
+| ellipsis | `...` |
+| hyphen | `-` |
+| dash | a long dash |
+| open quote / close quote | `"` |
+| open paren / close paren | `(` / `)` |
+| new line | line break |
+| new paragraph | blank line |
+
+## Dictating system audio
+
+**Settings → Audio → Listen to** can also capture audio playing on your Mac, for example to transcribe a video call. This needs the Screen & System Audio Recording permission.

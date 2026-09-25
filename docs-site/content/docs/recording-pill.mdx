@@ -1,0 +1,21 @@
+---
+title: Recording pill
+description: The glass capsule that shows Warble is listening.
+---
+
+While you dictate, a small Liquid Glass pill floats above the Dock on the screen your pointer is on. It never takes focus and clicks pass straight through it.
+
+<div className="grid gap-4 sm:grid-cols-3">
+  <Screenshot name="pill-recording" alt="Pill while listening" caption="Listening: live waveform" bare />
+  <Screenshot name="pill-transcribing" alt="Pill while transcribing" caption="Transcribing" bare />
+  <Screenshot name="pill-inserted" alt="Pill after typing" caption="Typed" bare />
+</div>
+
+| State | What you see |
+| --- | --- |
+| Listening | A red dot and bars that follow your voice. |
+| Transcribing | Three rippling dots while Parakeet works. |
+| Typed | A green check for a moment, then the pill fades. |
+| Problem | A warning with a short reason, such as a missing permission. |
+
+Turn it off in **Settings → Feedback → Show recording pill**. The menu bar icon animates the same states either way.

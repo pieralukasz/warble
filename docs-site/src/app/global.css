@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/emerald.css";
+@import "fumadocs-ui/css/preset.css";
+
+/* Warble green, matched to the app accent (rgb 41 184 120). */
+@theme {
+  --color-fd-primary: hsl(153, 64%, 42%);
+  --color-fd-ring: hsl(153, 64%, 42%);
+}
+
+.dark {
+  --color-fd-primary: hsl(153, 62%, 56%);
+  --color-fd-ring: hsl(153, 62%, 56%);
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Keeps the page from shifting when a dialog locks scrolling; must beat the inline style. */
+html > body[data-scroll-locked] {
+  /* biome-ignore lint/complexity/noImportantStyles: overrides an inline style set by the scroll lock */
+  margin-right: 0px !important;
+  /* biome-ignore lint/complexity/noImportantStyles: same override for the CSS variable */
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+.warble-glow {
+  background:
+    radial-gradient(
+      60% 50% at 50% 0%,
+      hsla(153, 64%, 45%, 0.28),
+      transparent 70%
+    ),
+    radial-gradient(
+      40% 40% at 85% 20%,
+      hsla(185, 70%, 45%, 0.18),
+      transparent 70%
+    );
+}

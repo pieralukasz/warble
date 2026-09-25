@@ -1,0 +1,42 @@
+---
+title: Configuration file
+description: The keys in ~/.config/warble/config.json.
+---
+
+Settings are plain JSON in `~/.config/warble/config.json`. The app writes it whenever you change something, so editing it by hand is optional.
+
+```json
+{
+  "hotkeys": [{ "keyCode": 63, "modifiers": [] }],
+  "language": "en",
+  "toggleMode": false,
+  "spokenPunctuation": false,
+  "audioCaptureSource": "microphone",
+  "maxRecordings": 0,
+  "shouldShowRecordingPill": true,
+  "shouldPlaySounds": true,
+  "hasCompletedOnboarding": true
+}
+```
+
+| Key | Values |
+| --- | --- |
+| `hotkeys` | List of `{ keyCode, modifiers }`. Modifiers are `cmd`, `shift`, `ctrl`, `option`. Key code 63 is fn. |
+| `language` | A [language code](/docs/languages) or `auto`. |
+| `toggleMode` | `true` to press once to start and again to stop. |
+| `spokenPunctuation` | `true` to turn spoken words into punctuation. |
+| `audioCaptureSource` | `microphone`, `systemAudio` or `microphoneAndSystemAudio`. |
+| `audioInputDeviceUID` | Core Audio device UID; leave it out for the system default. |
+| `maxRecordings` | `0` deletes audio after transcription; `1` to `100` keeps that many. |
+| `shouldShowRecordingPill` | Show the floating pill while dictating. |
+| `shouldPlaySounds` | Play start and stop sounds. |
+| `hasCompletedOnboarding` | Set to `false` to see setup again at next launch. |
+
+Other data lives next to it:
+
+| Path | Contents |
+| --- | --- |
+| `~/.config/warble/recordings` | Kept audio recordings. |
+| `~/Library/Application Support/Warble/history.json` | Dictation history. |
+| `~/Library/Application Support/Warble/dictionary.json` | Your dictionary. |
+| `~/Library/Application Support/FluidAudio/Models` | The Parakeet model. |

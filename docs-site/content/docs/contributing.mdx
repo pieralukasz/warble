@@ -1,0 +1,47 @@
+---
+title: Contributing
+description: Build, test, take screenshots and send a pull request.
+---
+
+Contributions are welcome, from typo fixes to new features. Keep Warble local-first: no feature should send audio or text off the Mac.
+
+## Build and test
+
+```bash
+swift build
+swift test --disable-sandbox
+scripts/install.sh   # build, bundle and install to ~/Applications
+```
+
+## Preview mode and screenshots
+
+`WARBLE_PREVIEW` opens any screen on sample data, without touching your real history, dictionary or settings:
+
+```bash
+WARBLE_PREVIEW=history .build/Warble.app/Contents/MacOS/warble start
+```
+
+Scenes: `home`, `history`, `dictionary`, `settings`, `onboarding-0` to `onboarding-5`, and `pill-recording`, `pill-transcribing`, `pill-inserted`, `pill-error`.
+
+`scripts/capture-screenshots.sh` renders them all into `docs-site/public/screenshots`. It uses `screencapture`, so the terminal running it needs Screen Recording permission.
+
+## Docs
+
+The site lives in `docs-site`, built with [Fumadocs](https://fumadocs.dev) and exported as static HTML.
+
+```bash
+cd docs-site
+bun install
+bun run dev
+```
+
+## Pull requests
+
+1. Branch from `main`.
+2. Add tests for logic changes; UI and permissions need a manual check on a Mac.
+3. Run `swift test` and, for docs changes, `bun run build`.
+4. Open the pull request with a short description and a screenshot for UI changes.
+
+## Credits
+
+Warble grew out of [open-wispr](https://github.com/human37/open-wispr) by human37 and uses [FluidAudio](https://github.com/FluidInference/FluidAudio) to run NVIDIA Parakeet. Warble and open-wispr are MIT licensed; FluidAudio is Apache 2.0. The Parakeet model has its own license, listed on its Hugging Face page.

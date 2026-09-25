@@ -104,7 +104,7 @@ struct ModelStep: View {
         StepLayout(
             symbol: "cpu",
             title: "Download the speech model",
-            message: "Parakeet TDT v3 is downloaded once, then works offline in \(Config.supportedLanguages.count - 1) languages."
+            message: "Parakeet TDT v3 is downloaded once, then works offline in 25 European languages."
         ) {
             switch appState.model {
             case .ready:

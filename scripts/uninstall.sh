@@ -1,48 +1,24 @@
 #!/bin/bash
+# Removes Warble. Settings, history, dictionary and the downloaded model are
+# kept unless you pass --purge.
 set -euo pipefail
 
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-DIM='\033[2m'
-BOLD='\033[1m'
-NC='\033[0m'
+PURGE=false
+[ "${1:-}" = "--purge" ] && PURGE=true
 
-step() { printf "\n  ${BLUE}${BOLD}%s${NC}\n" "$1"; }
-ok()   { printf "  ${GREEN}✓${NC} %s\n" "$1"; }
-
-printf "\n"
-printf "  ${BOLD}open-wispr${NC} ${DIM}— uninstall${NC}\n"
-printf "  ${DIM}────────────────────────────────────────────${NC}\n"
-
-step "Stopping service"
-brew services stop open-wispr 2>/dev/null || true
-pkill -f "open-wispr start" 2>/dev/null || true
+osascript -e 'tell application "Warble" to quit' 2>/dev/null || true
 sleep 1
-ok "Stopped"
 
-step "Removing formula and tap"
-brew uninstall --force open-wispr 2>/dev/null || true
-brew untap human37/open-wispr 2>/dev/null || true
-ok "Removed"
+rm -rf "$HOME/Applications/Warble.app"
+rm -f "$HOME/.local/bin/warble"
+rm -f "$HOME/Library/LaunchAgents/io.github.pieralukasz.warble.plist"
+echo "Removed Warble.app, the warble command and the login item."
 
-step "Removing app bundle"
-rm -rf ~/Applications/OpenWispr.app
-rm -rf /Applications/OpenWispr.app 2>/dev/null || true
-ok "Removed"
-
-step "Removing config, model, and logs"
-rm -rf ~/.config/open-wispr
-rm -f /opt/homebrew/var/log/open-wispr.log 2>/dev/null || true
-ok "Removed"
-
-step "Unregistering from LaunchServices"
-/System/Library/Frameworks/CoreServices.framework/Versions/A/Frameworks/LaunchServices.framework/Versions/A/Support/lsregister -u ~/Applications/OpenWispr.app 2>/dev/null || true
-ok "Unregistered"
-
-printf "\n"
-printf "  ${DIM}────────────────────────────────────────────${NC}\n"
-printf "  ${GREEN}${BOLD}Uninstalled.${NC}\n"
-printf "\n"
-printf "  To reinstall:\n"
-printf "  ${BOLD}curl -fsSL https://raw.githubusercontent.com/human37/open-wispr/main/scripts/install.sh | bash${NC}\n"
-printf "\n"
+if $PURGE; then
+    rm -rf "$HOME/.config/warble"
+    rm -rf "$HOME/Library/Application Support/Warble"
+    echo "Removed settings, recordings, history and dictionary."
+    echo "The Parakeet model in ~/Library/Application Support/FluidAudio is shared with other FluidAudio apps and was left in place."
+else
+    echo "Kept ~/.config/warble and ~/Library/Application Support/Warble. Run with --purge to delete them."
+fi

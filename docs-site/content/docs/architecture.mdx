@@ -1,0 +1,66 @@
+---
+title: Architecture
+description: How the pieces fit, for contributors and anyone forking Warble.
+---
+
+Warble is a Swift package with two targets: `WarbleKit`, the library with all the logic and UI, and `warble`, a thin executable for the CLI and app entry point.
+
+```text
+hotkey ─▶ DictationController ─▶ AudioRecorder ─▶ ParakeetTranscriber
+                 │                                       │
+                 ▼                                       ▼
+             AppState ◀──────── DictionaryEngine ◀── raw text
+        ┌────────┼─────────┐
+        ▼        ▼         ▼
+  menu bar     pill     windows ─▶ HistoryStore, DictionaryStore, SettingsModel
+```
+
+## Modules
+
+<Files>
+  <Folder name="Sources/WarbleKit" defaultOpen>
+    <File name="AppDelegate.swift" />
+    <Folder name="Dictation" defaultOpen>
+      <File name="DictationController.swift" />
+      <File name="ModelLoader.swift" />
+      <File name="HotkeyController.swift" />
+      <File name="SoundPlayer.swift" />
+    </Folder>
+    <Folder name="State">
+      <File name="AppState.swift" />
+      <File name="SettingsModel.swift" />
+      <File name="DictationPhase.swift" />
+    </Folder>
+    <Folder name="Stores">
+      <File name="HistoryStore.swift" />
+      <File name="DictionaryEngine.swift" />
+    </Folder>
+    <Folder name="UI">
+      <File name="Pill/" />
+      <File name="Main/" />
+      <File name="Onboarding/" />
+      <File name="Settings/" />
+    </Folder>
+    <File name="AudioRecorder.swift" />
+    <File name="ParakeetTranscriber.swift" />
+    <File name="TextInserter.swift" />
+  </Folder>
+</Files>
+
+| Piece | Responsibility |
+| --- | --- |
+| `AppDelegate` | Wires everything together and walks launch: settings, permissions, model, hotkey. |
+| `DictationController` | Key down to typed text: record, transcribe, apply the dictionary, paste, save to history. |
+| `AppState` | Observable single source of truth: dictation phase, model status, waveform levels. |
+| `AudioRecorder` | Microphone via AVAudioEngine and system audio via ScreenCaptureKit, written as 16 kHz mono. |
+| `ParakeetTranscriber` | FluidAudio's `AsrManager` with Parakeet TDT v3, loaded once and shared. |
+| `TextInserter` | Pastes through the clipboard and restores what was there before. |
+| `RecordingPillController` | A click-through `NSPanel` hosting the SwiftUI pill on every Space. |
+| `WindowCoordinator` | Main and setup windows; shows a Dock icon only while one is open. |
+
+## Design choices
+
+- **One phase enum.** `DictationPhase` drives the icon, the pill and the sidebar status, so they cannot disagree.
+- **Plain files.** History, dictionary and settings are JSON a user can read, back up or delete.
+- **No silent data loss.** A file that fails to decode is moved aside as `*.corrupt-<time>.json` before anything new is written.
+- **Testable core.** Dictionary matching, stats, audio levels and the phase machine are pure and covered by unit tests.

@@ -1,0 +1,35 @@
+---
+title: Privacy
+description: What Warble records, where it goes, and what never leaves your Mac.
+---
+
+Warble is built so that there is nothing to trust: it has no server.
+
+## What happens to your audio
+
+- Recording starts when you press the hotkey and stops when you release it.
+- Audio is written to a temporary 16 kHz WAV, transcribed on your Mac, and deleted, unless you choose to keep recordings.
+- Transcription runs in Parakeet on the Neural Engine. No audio or text is sent anywhere.
+
+## Network access
+
+The only network request is the model download from Hugging Face on first launch, handled by FluidAudio. After that Warble works with networking turned off.
+
+## What is stored
+
+| Data | Location | How to remove |
+| --- | --- | --- |
+| Settings | `~/.config/warble/config.json` | `scripts/uninstall.sh --purge` |
+| History | `~/Library/Application Support/Warble/history.json` | **History → Clear History** |
+| Dictionary | `~/Library/Application Support/Warble/dictionary.json` | Remove entries in **Dictionary** |
+| Kept audio | `~/.config/warble/recordings` | Set **Keep audio recordings** to Never |
+
+## Permissions
+
+| Permission | Why |
+| --- | --- |
+| Microphone | Record while the hotkey is held. |
+| Accessibility | Notice the hotkey in other apps and paste the transcribed text. |
+| Screen & System Audio Recording | Only if you choose to transcribe system audio. |
+
+Warble has no analytics, crash reporting or account. The source is on [GitHub](https://github.com/pieralukasz/open-wispr-parakeet) if you want to check.
