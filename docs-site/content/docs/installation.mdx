@@ -48,6 +48,40 @@ The first launch opens setup, which asks for the Microphone and Accessibility pe
   Warble copies `~/.config/open-wispr/config.json` on first launch, so your hotkey, language and microphone carry over. Quit the old app before using Warble, because both listen to the same key.
 </Callout>
 
+## For agents
+
+A coding agent such as Claude Code or Codex can do the install for you. Paste this prompt into it:
+
+```text title="Prompt"
+Install Warble, the free local voice dictation app for macOS, from
+https://github.com/pieralukasz/warble.
+
+1. Check that this Mac runs macOS 26 or later (`sw_vers -productVersion`) and
+   that Swift 6.2 or later is available (`swift --version`). If not, stop and
+   tell me what is missing.
+2. Clone the repository into ~/Projects/warble, or pull it if it is already
+   there, and run `scripts/install.sh` from its root.
+3. Run `~/.local/bin/warble status` and show me the output.
+4. Tell me that Warble opened a setup window, and that I have to allow the
+   Microphone and Accessibility permissions there myself.
+
+The full documentation, as plain text for agents:
+https://warble.lucaspiera.com/llms-full.txt
+```
+
+Or run the same steps yourself:
+
+```bash
+git clone https://github.com/pieralukasz/warble.git ~/Projects/warble \
+  || git -C ~/Projects/warble pull --ff-only
+cd ~/Projects/warble && scripts/install.sh
+~/.local/bin/warble status
+```
+
+The install needs no input until the end, when macOS asks a person to allow the Microphone and Accessibility permissions. An agent cannot click those for you.
+
+For agents that read documentation, the site publishes an index at [`/llms.txt`](/llms.txt), every page in one file at [`/llms-full.txt`](/llms-full.txt), and each page as Markdown through the **Copy Markdown** button at the top.
+
 ## Start at login
 
 Turn on **Settings → System → Start Warble at login**, or run `warble enable-autostart`.

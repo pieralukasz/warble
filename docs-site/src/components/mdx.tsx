@@ -4,6 +4,7 @@ import { Step, Steps } from "fumadocs-ui/components/steps";
 import { Tab, Tabs } from "fumadocs-ui/components/tabs";
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import type { MDXComponents } from "mdx/types";
+import { LivePill, PillStage } from "@/components/live-pill";
 import { Screenshot } from "@/components/screenshot";
 
 export function getMDXComponents(components?: MDXComponents) {
@@ -14,6 +15,8 @@ export function getMDXComponents(components?: MDXComponents) {
     File,
     Files,
     Folder,
+    LivePill,
+    PillStage,
     Screenshot,
     Step,
     Steps,

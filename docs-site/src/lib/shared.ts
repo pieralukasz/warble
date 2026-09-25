@@ -19,6 +19,7 @@ export const gitConfig = {
 };
 
 export const repoUrl = `https://github.com/${gitConfig.user}/${gitConfig.repo}`;
+export const authorUrl = "https://lucaspiera.com";
 
 const getContentUrl = createGetUrl(docsContentRoute);
 

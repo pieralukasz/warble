@@ -11,9 +11,9 @@
 </p>
 
 <p align="center">
-  <a href="https://warble-omega.vercel.app"><strong>Documentation</strong></a> ·
+  <a href="https://warble.lucaspiera.com"><strong>Documentation</strong></a> ·
   <a href="#install">Install</a> ·
-  <a href="https://warble-omega.vercel.app/docs/privacy">Privacy</a> ·
+  <a href="https://warble.lucaspiera.com/docs/privacy">Privacy</a> ·
   <a href="https://github.com/pieralukasz/warble/issues">Issues</a>
 </p>
 
@@ -42,7 +42,10 @@ Most dictation apps send your voice to a server, charge a subscription, or both.
 <table>
   <tr>
     <td width="42%" valign="top">
-      <img src="docs-site/public/screenshots/menubar.png" alt="The Warble menu bar panel">
+      <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="docs-site/public/screenshots/menubar-dark.png">
+        <img src="docs-site/public/screenshots/menubar.png" alt="The Warble menu bar panel">
+      </picture>
     </td>
     <td valign="top">
       <h3>The menu bar is home</h3>
@@ -101,6 +104,8 @@ scripts/install.sh
 
 The script builds a release, installs `~/Applications/Warble.app`, links the `warble` command into `~/.local/bin` and opens the app. The setup window takes it from there.
 
+**Using a coding agent?** Point Claude Code, Codex or similar at this repository and ask it to follow the [install steps for agents](https://warble.lucaspiera.com/docs/installation#for-agents). It can build and install everything; only the Microphone and Accessibility prompts at the end need you.
+
 Coming from open-wispr? Warble imports `~/.config/open-wispr/config.json` on first launch. Quit the old app first, since both listen to the same key.
 
 Uninstall with `scripts/uninstall.sh`, or `scripts/uninstall.sh --purge` to also delete settings, history and dictionary.
@@ -117,7 +122,7 @@ warble enable-autostart           Start at login
 
 ## Documentation
 
-The full guide is at **[warble-omega.vercel.app](https://warble-omega.vercel.app)**: dictating, the dictionary, settings, languages, the CLI, the config file, privacy and troubleshooting. Its source lives in [`docs-site`](docs-site), built with [Fumadocs](https://fumadocs.dev):
+The full guide is at **[warble.lucaspiera.com](https://warble.lucaspiera.com)**: dictating, the dictionary, settings, languages, the CLI, the config file, privacy and troubleshooting. Its source lives in [`docs-site`](docs-site), built with [Fumadocs](https://fumadocs.dev):
 
 ```bash
 cd docs-site && bun install && bun run dev
@@ -131,7 +136,7 @@ WARBLE_PREVIEW=history .build/Warble.app/Contents/MacOS/warble start   # any scr
 scripts/capture-screenshots.sh                                         # refresh every screenshot
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) and the [architecture page](https://warble-omega.vercel.app/docs/architecture).
+See [CONTRIBUTING.md](CONTRIBUTING.md) and the [architecture page](https://warble.lucaspiera.com/docs/architecture).
 
 ## Credits
 

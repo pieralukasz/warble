@@ -12,8 +12,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { LivePill } from "@/components/live-pill";
 import { Screenshot } from "@/components/screenshot";
-import { asset, repoUrl } from "@/lib/shared";
+import { asset, authorUrl, repoUrl } from "@/lib/shared";
 
 const steps = [
   {
@@ -64,6 +65,13 @@ const features = [
     title: "Free, for real",
     text: "No account, no subscription, no word limit. MIT licensed, so you can read and change every line.",
   },
+];
+
+const privacyFacts = [
+  "Audio is recorded only while the key is held and transcribed in memory.",
+  "Text, history and your dictionary are plain JSON files in Application Support.",
+  "The only network request is the one-time model download from Hugging Face.",
+  "No analytics, no crash reporting, no account. Check the source to be sure.",
 ];
 
 const comparison = [
@@ -141,29 +149,24 @@ export default function HomePage() {
       </Section>
 
       <Section eyebrow="Privacy" title="What leaves your Mac? Nothing.">
-        <div className="grid items-start gap-8 lg:grid-cols-2">
-          <ul className="space-y-4">
-            {[
-              "Audio is recorded only while the key is held and transcribed in memory.",
-              "Text, history and your dictionary are plain JSON files in Application Support.",
-              "The only network request is the one-time model download from Hugging Face.",
-              "No analytics, no crash reporting, no account. Check the source to be sure.",
-            ].map((line) => (
+        <div className="grid gap-6 lg:grid-cols-2">
+          <ul className="flex flex-col justify-between gap-5 rounded-2xl border bg-fd-card p-6">
+            {privacyFacts.map((line) => (
               <li key={line} className="flex gap-3">
                 <Lock className="mt-0.5 size-5 shrink-0 text-fd-primary" />
                 <span>{line}</span>
               </li>
             ))}
           </ul>
-          <div className="overflow-hidden rounded-2xl border">
-            <table className="w-full text-sm">
+          <div className="overflow-hidden rounded-2xl border bg-fd-card">
+            <table className="h-full w-full table-fixed text-sm">
               <thead className="bg-fd-muted">
                 <tr>
-                  <th className="p-3 text-left font-medium" />
-                  <th className="p-3 text-left font-semibold text-fd-primary">
+                  <th className="w-[38%] px-5 py-3.5 text-left font-medium" />
+                  <th className="px-5 py-3.5 text-left font-semibold text-fd-primary">
                     Warble
                   </th>
-                  <th className="p-3 text-left font-medium text-fd-muted-foreground">
+                  <th className="px-5 py-3.5 text-left font-medium text-fd-muted-foreground">
                     Typical cloud dictation
                   </th>
                 </tr>
@@ -171,9 +174,13 @@ export default function HomePage() {
               <tbody>
                 {comparison.map(([label, warble, cloud]) => (
                   <tr key={label} className="border-t">
-                    <td className="p-3 text-fd-muted-foreground">{label}</td>
-                    <td className="p-3 font-medium">{warble}</td>
-                    <td className="p-3 text-fd-muted-foreground">{cloud}</td>
+                    <td className="px-5 py-3.5 text-fd-muted-foreground">
+                      {label}
+                    </td>
+                    <td className="px-5 py-3.5 font-medium">{warble}</td>
+                    <td className="px-5 py-3.5 text-fd-muted-foreground">
+                      {cloud}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -195,19 +202,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      <footer className="border-t py-8 text-center text-sm text-fd-muted-foreground">
-        MIT licensed. Built on{" "}
-        <a
-          className="underline"
-          href="https://github.com/FluidInference/FluidAudio"
-        >
-          FluidAudio
-        </a>{" "}
-        and NVIDIA Parakeet, grown from{" "}
-        <a className="underline" href="https://github.com/human37/open-wispr">
-          open-wispr
-        </a>
-        .
+      <footer className="border-t py-10 text-center text-sm text-fd-muted-foreground">
+        <p>
+          Made by{" "}
+          <a
+            className="font-medium text-fd-foreground underline underline-offset-4"
+            href={authorUrl}
+          >
+            Lucas Piera
+          </a>
+          .
+        </p>
+        <p className="mt-2">
+          MIT licensed. Built on{" "}
+          <a
+            className="underline"
+            href="https://github.com/FluidInference/FluidAudio"
+          >
+            FluidAudio
+          </a>{" "}
+          and NVIDIA Parakeet, grown from{" "}
+          <a className="underline" href="https://github.com/human37/open-wispr">
+            open-wispr
+          </a>
+          .
+        </p>
       </footer>
     </main>
   );
@@ -244,12 +263,9 @@ function Hero() {
           alt="Warble main window with History grouped by day"
           className="my-0"
         />
-        <Screenshot
-          name="pill-recording"
-          alt="The recording pill with a live waveform"
-          bare
-          className="absolute -bottom-2 left-1/2 my-0 w-72 -translate-x-1/2 drop-shadow-2xl"
-        />
+        <div className="absolute inset-x-0 bottom-8 flex justify-center">
+          <LivePill />
+        </div>
       </div>
     </section>
   );
