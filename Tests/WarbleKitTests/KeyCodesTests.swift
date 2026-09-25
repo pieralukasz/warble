@@ -1,5 +1,5 @@
 import XCTest
-@testable import OpenWisprLib
+@testable import WarbleKit
 
 final class KeyCodesTests: XCTestCase {
 

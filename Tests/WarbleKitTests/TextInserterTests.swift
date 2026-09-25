@@ -1,6 +1,6 @@
 import AppKit
 import XCTest
-@testable import OpenWisprLib
+@testable import WarbleKit
 
 final class TextInserterTests: XCTestCase {
 

@@ -2,8 +2,8 @@
 import PackageDescription
 
 let package = Package(
-    name: "open-wispr",
-    platforms: [.macOS(.v14)],
+    name: "warble",
+    platforms: [.macOS("26.0")],
     dependencies: [
         .package(
             url: "https://github.com/FluidInference/FluidAudio.git",
@@ -12,25 +12,26 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "OpenWisprLib",
+            name: "WarbleKit",
             dependencies: [.product(name: "FluidAudio", package: "FluidAudio")],
-            path: "Sources/OpenWisprLib",
+            path: "Sources/WarbleKit",
             linkerSettings: [
                 .linkedFramework("CoreAudio"),
                 .linkedFramework("AVFoundation"),
                 .linkedFramework("AppKit"),
                 .linkedFramework("ScreenCaptureKit"),
+                .linkedFramework("SwiftUI"),
             ]
         ),
         .executableTarget(
-            name: "open-wispr",
-            dependencies: ["OpenWisprLib"],
-            path: "Sources/OpenWispr"
+            name: "warble",
+            dependencies: ["WarbleKit"],
+            path: "Sources/Warble"
         ),
         .testTarget(
-            name: "OpenWisprTests",
-            dependencies: ["OpenWisprLib"],
-            path: "Tests/OpenWisprTests"
+            name: "WarbleKitTests",
+            dependencies: ["WarbleKit"],
+            path: "Tests/WarbleKitTests"
         ),
     ]
 )

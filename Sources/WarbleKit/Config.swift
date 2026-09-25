@@ -1,10 +1,5 @@
 import Foundation
 
-public struct LanguageOption: Equatable, Sendable {
-    public let code: String
-    public let name: String
-}
-
 public enum AudioCaptureSource: String, Codable, CaseIterable, Sendable {
     case microphone
     case systemAudio
@@ -36,9 +31,12 @@ public struct Config: Codable {
     public var audioCaptureSource: AudioCaptureSource
     public var audioInputDeviceID: UInt32?
     public var audioInputDeviceUID: String?
-    /// Set once the daemon has offered to start OpenWispr at login, so the
+    /// Set once the daemon has offered to start Warble at login, so the
     /// question is asked a single time regardless of the answer.
     public var launchAtLoginPrompted: FlexBool?
+    public var hasCompletedOnboarding: FlexBool?
+    public var shouldShowRecordingPill: FlexBool?
+    public var shouldPlaySounds: FlexBool?
 
     public var hotkey: HotkeyConfig {
         get { hotkeys[0] }
@@ -70,6 +68,9 @@ public struct Config: Codable {
         case audioInputDeviceID
         case audioInputDeviceUID
         case launchAtLoginPrompted
+        case hasCompletedOnboarding
+        case shouldShowRecordingPill
+        case shouldPlaySounds
     }
 
     public init(from decoder: Decoder) throws {
@@ -101,6 +102,9 @@ public struct Config: Codable {
             FlexBool.self,
             forKey: .launchAtLoginPrompted
         )
+        hasCompletedOnboarding = try container.decodeIfPresent(FlexBool.self, forKey: .hasCompletedOnboarding)
+        shouldShowRecordingPill = try container.decodeIfPresent(FlexBool.self, forKey: .shouldShowRecordingPill)
+        shouldPlaySounds = try container.decodeIfPresent(FlexBool.self, forKey: .shouldPlaySounds)
     }
 
     public func encode(to encoder: Encoder) throws {
@@ -115,6 +119,9 @@ public struct Config: Codable {
         try container.encodeIfPresent(audioInputDeviceID, forKey: .audioInputDeviceID)
         try container.encodeIfPresent(audioInputDeviceUID, forKey: .audioInputDeviceUID)
         try container.encodeIfPresent(launchAtLoginPrompted, forKey: .launchAtLoginPrompted)
+        try container.encodeIfPresent(hasCompletedOnboarding, forKey: .hasCompletedOnboarding)
+        try container.encodeIfPresent(shouldShowRecordingPill, forKey: .shouldShowRecordingPill)
+        try container.encodeIfPresent(shouldPlaySounds, forKey: .shouldPlaySounds)
     }
 
     public init(
@@ -141,39 +148,6 @@ public struct Config: Codable {
         self.launchAtLoginPrompted = launchAtLoginPrompted
     }
 
-    /// Languages supported by Parakeet TDT v3 in the pinned FluidAudio revision.
-    public static let supportedLanguages: [LanguageOption] = [
-        LanguageOption(code: "auto", name: "Auto-Detect"),
-        LanguageOption(code: "en", name: "English"),
-        LanguageOption(code: "pl", name: "Polish"),
-        LanguageOption(code: "es", name: "Spanish"),
-        LanguageOption(code: "fr", name: "French"),
-        LanguageOption(code: "de", name: "German"),
-        LanguageOption(code: "it", name: "Italian"),
-        LanguageOption(code: "pt", name: "Portuguese"),
-        LanguageOption(code: "ro", name: "Romanian"),
-        LanguageOption(code: "nl", name: "Dutch"),
-        LanguageOption(code: "da", name: "Danish"),
-        LanguageOption(code: "sv", name: "Swedish"),
-        LanguageOption(code: "fi", name: "Finnish"),
-        LanguageOption(code: "hu", name: "Hungarian"),
-        LanguageOption(code: "et", name: "Estonian"),
-        LanguageOption(code: "lv", name: "Latvian"),
-        LanguageOption(code: "lt", name: "Lithuanian"),
-        LanguageOption(code: "mt", name: "Maltese"),
-        LanguageOption(code: "cs", name: "Czech"),
-        LanguageOption(code: "sk", name: "Slovak"),
-        LanguageOption(code: "sl", name: "Slovenian"),
-        LanguageOption(code: "hr", name: "Croatian"),
-        LanguageOption(code: "bs", name: "Bosnian"),
-        LanguageOption(code: "ru", name: "Russian"),
-        LanguageOption(code: "uk", name: "Ukrainian"),
-        LanguageOption(code: "be", name: "Belarusian"),
-        LanguageOption(code: "bg", name: "Bulgarian"),
-        LanguageOption(code: "sr", name: "Serbian"),
-        LanguageOption(code: "el", name: "Greek"),
-    ]
-
     public static let defaultMaxRecordings = 0
 
     public static func effectiveMaxRecordings(_ value: Int?) -> Int {
@@ -192,7 +166,7 @@ public struct Config: Codable {
 
     public static var configDir: URL {
         FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".config/open-wispr")
+            .appendingPathComponent(".config/warble")
     }
 
     public static var configFile: URL {
@@ -200,6 +174,11 @@ public struct Config: Codable {
     }
 
     public static func load() -> Config {
+        do {
+            try LegacyConfigMigration.migrateIfNeeded()
+        } catch {
+            fputs("Warning: could not migrate the open-wispr config: \(error.localizedDescription)\n", stderr)
+        }
         guard let data = try? Data(contentsOf: configFile) else {
             let config = Config.defaultConfig
             try? config.save()
@@ -243,53 +222,5 @@ public struct Config: Codable {
             "whisperPrompt",
         ]
         return deprecatedKeys.contains(where: { json[$0] != nil })
-    }
-}
-
-public struct FlexBool: Codable {
-    public let value: Bool
-
-    public init(_ value: Bool) { self.value = value }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let bool = try? container.decode(Bool.self) {
-            value = bool
-        } else if let string = try? container.decode(String.self) {
-            value = ["true", "yes", "1"].contains(string.lowercased())
-        } else if let integer = try? container.decode(Int.self) {
-            value = integer != 0
-        } else {
-            value = false
-        }
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(value)
-    }
-}
-
-public struct HotkeyConfig: Codable, Equatable {
-    public var keyCode: UInt16
-    public var modifiers: [String]
-
-    public init(keyCode: UInt16, modifiers: [String]) {
-        self.keyCode = keyCode
-        self.modifiers = modifiers
-    }
-
-    public var modifierFlags: UInt64 {
-        var flags: UInt64 = 0
-        for modifier in modifiers {
-            switch modifier.lowercased() {
-            case "cmd", "command": flags |= UInt64(1 << 20)
-            case "shift": flags |= UInt64(1 << 17)
-            case "ctrl", "control": flags |= UInt64(1 << 18)
-            case "opt", "option", "alt": flags |= UInt64(1 << 19)
-            default: break
-            }
-        }
-        return flags
     }
 }

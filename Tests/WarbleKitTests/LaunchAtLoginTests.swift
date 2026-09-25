@@ -1,5 +1,5 @@
 import XCTest
-@testable import OpenWisprLib
+@testable import WarbleKit
 
 final class LaunchAtLoginTests: XCTestCase {
 
@@ -16,7 +16,7 @@ final class LaunchAtLoginTests: XCTestCase {
     // MARK: - Plist contents
 
     func testPlistRunsTheGivenExecutableWithStart() throws {
-        let path = "/Users/tester/Applications/OpenWispr.app/Contents/MacOS/open-wispr"
+        let path = "/Users/tester/Applications/Warble.app/Contents/MacOS/warble"
 
         let plist = try decodePlist(executablePath: path)
 
@@ -24,21 +24,21 @@ final class LaunchAtLoginTests: XCTestCase {
     }
 
     func testPlistUsesTheBundleIdentifierAsLabel() throws {
-        let plist = try decodePlist(executablePath: "/tmp/open-wispr")
+        let plist = try decodePlist(executablePath: "/tmp/warble")
 
-        XCTAssertEqual(plist["Label"] as? String, "com.human37.open-wispr")
-        XCTAssertEqual(LaunchAtLogin.label, "com.human37.open-wispr")
+        XCTAssertEqual(plist["Label"] as? String, "io.github.pieralukasz.warble")
+        XCTAssertEqual(LaunchAtLogin.label, "io.github.pieralukasz.warble")
     }
 
     func testPlistRunsAtLoadAsAnInteractiveJob() throws {
-        let plist = try decodePlist(executablePath: "/tmp/open-wispr")
+        let plist = try decodePlist(executablePath: "/tmp/warble")
 
         XCTAssertEqual(plist["RunAtLoad"] as? Bool, true)
         XCTAssertEqual(plist["ProcessType"] as? String, "Interactive")
     }
 
     func testPlistOmitsKeepAliveSoQuitIsRespected() throws {
-        let plist = try decodePlist(executablePath: "/tmp/open-wispr")
+        let plist = try decodePlist(executablePath: "/tmp/warble")
 
         XCTAssertNil(plist["KeepAlive"])
     }
@@ -47,7 +47,7 @@ final class LaunchAtLoginTests: XCTestCase {
 
     func testPlistLivesInTheUserLaunchAgentsDirectory() {
         let expected = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent("Library/LaunchAgents/com.human37.open-wispr.plist")
+            .appendingPathComponent("Library/LaunchAgents/io.github.pieralukasz.warble.plist")
 
         XCTAssertEqual(LaunchAtLogin.plistURL, expected)
     }

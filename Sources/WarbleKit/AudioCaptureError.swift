@@ -8,9 +8,9 @@ public enum AudioCaptureError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .screenRecordingPermissionRequired:
-            return "System audio capture needs Screen Recording permission. Grant OpenWispr in "
+            return "System audio capture needs Screen Recording permission. Grant Warble in "
                 + "System Settings → Privacy & Security → Screen & System Audio Recording, "
-                + "then restart OpenWispr."
+                + "then restart Warble."
         case .noDisplayAvailable:
             return "No display is available for system audio capture"
         case .microphoneEngineUnavailable:

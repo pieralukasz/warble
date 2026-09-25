@@ -131,7 +131,7 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
         statusBar.buildMenu()
 
         let hotkeyDesc = config.hotkeySummary()
-        print("open-wispr v\(OpenWispr.version)")
+        print("warble v\(AppInfo.version)")
         print("Hotkey: \(hotkeyDesc)")
         print("Engine: Parakeet v3")
         print("Ready.")
@@ -148,8 +148,8 @@ public class AppDelegate: NSObject, NSApplicationDelegate {
               LaunchAtLogin.defaultExecutablePath() != nil else { return }
 
         let alert = NSAlert()
-        alert.messageText = "Start OpenWispr at login?"
-        alert.informativeText = "OpenWispr can start automatically when you log in, so the "
+        alert.messageText = "Start Warble at login?"
+        alert.informativeText = "Warble can start automatically when you log in, so the "
             + "dictation hotkey is always ready. You can change this any time from the menu "
             + "bar icon."
         alert.addButton(withTitle: "Start at Login")

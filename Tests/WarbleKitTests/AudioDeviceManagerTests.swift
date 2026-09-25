@@ -1,5 +1,5 @@
 import XCTest
-@testable import OpenWisprLib
+@testable import WarbleKit
 
 final class AudioDeviceManagerTests: XCTestCase {
 
@@ -19,7 +19,7 @@ final class AudioDeviceManagerTests: XCTestCase {
         // saved with no longer matches any present device.
         XCTAssertNil(
             AudioDeviceManager.resolveConfiguredDeviceID(
-                uid: "OpenWisprTests:NoSuchDevice:UID",
+                uid: "WarbleKitTests:NoSuchDevice:UID",
                 legacyID: 42
             )
         )

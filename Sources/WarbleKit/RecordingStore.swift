@@ -28,7 +28,7 @@ public class RecordingStore {
     public static func tempRecordingURL() -> URL {
         let unique = String(UUID().uuidString.prefix(8))
         return FileManager.default.temporaryDirectory
-            .appendingPathComponent("open-wispr-recording-\(unique).wav")
+            .appendingPathComponent("warble-recording-\(unique).wav")
     }
 
     public static func newRecordingURL() -> URL {

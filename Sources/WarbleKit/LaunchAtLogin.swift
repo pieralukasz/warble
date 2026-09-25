@@ -7,7 +7,7 @@ import Foundation
 /// should run, and skipping the bootstrap avoids starting a second daemon
 /// alongside the one the user is already running.
 public enum LaunchAtLogin {
-    public static let label = "com.human37.open-wispr"
+    public static let label = "io.github.pieralukasz.warble"
 
     public enum Failure: LocalizedError {
         case executableNotInAppBundle
@@ -15,9 +15,9 @@ public enum LaunchAtLogin {
         public var errorDescription: String? {
             switch self {
             case .executableNotInAppBundle:
-                return "Autostart needs the binary inside OpenWispr.app, because macOS "
+                return "Autostart needs the binary inside Warble.app, because macOS "
                     + "binds Microphone and Accessibility grants to the app bundle. "
-                    + "Run OpenWispr.app/Contents/MacOS/open-wispr instead."
+                    + "Run Warble.app/Contents/MacOS/warble instead."
             }
         }
     }

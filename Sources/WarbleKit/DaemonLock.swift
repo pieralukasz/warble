@@ -1,7 +1,7 @@
 import Foundation
 
 /// Single-instance guard for the dictation daemon. Without it, opening
-/// OpenWispr.app while the LaunchAgent copy is running registers a second global
+/// Warble.app while the LaunchAgent copy is running registers a second global
 /// listener for the same hotkey.
 public enum DaemonLock {
     public static var defaultLockURL: URL {

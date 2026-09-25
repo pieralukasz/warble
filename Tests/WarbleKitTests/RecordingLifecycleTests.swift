@@ -1,5 +1,5 @@
 import XCTest
-@testable import OpenWisprLib
+@testable import WarbleKit
 
 final class RecordingLifecycleTests: XCTestCase {
     func testHoldToTalkStartsOnceAndStopsOnKeyUp() {
@@ -54,7 +54,7 @@ final class RecordingLifecycleTests: XCTestCase {
     }
 
     func testDiscardCancelledRecordingRemovesPartialFile() throws {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("open-wispr-cancel-\(UUID().uuidString).wav")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("warble-cancel-\(UUID().uuidString).wav")
         try Data("partial".utf8).write(to: url)
 
         RecordingCancellation.discardPartialRecording(at: url)
@@ -63,7 +63,7 @@ final class RecordingLifecycleTests: XCTestCase {
     }
 
     func testDiscardCancelledRecordingAllowsMissingFile() {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("open-wispr-cancel-\(UUID().uuidString).wav")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("warble-cancel-\(UUID().uuidString).wav")
 
         RecordingCancellation.discardPartialRecording(at: url)
 
@@ -71,7 +71,7 @@ final class RecordingLifecycleTests: XCTestCase {
     }
 
     func testDiscardTrackedPartialRecordingRemovesFileBeforeClearingURL() throws {
-        var trackedURL: URL? = FileManager.default.temporaryDirectory.appendingPathComponent("open-wispr-cancel-\(UUID().uuidString).wav")
+        var trackedURL: URL? = FileManager.default.temporaryDirectory.appendingPathComponent("warble-cancel-\(UUID().uuidString).wav")
         let path = try XCTUnwrap(trackedURL?.path)
         try Data("partial".utf8).write(to: XCTUnwrap(trackedURL))
 

@@ -115,7 +115,7 @@ private final class SystemAudioStreamOutput: NSObject, SCStreamOutput {
 
 class AudioRecorder {
     private let systemAudioQueue = DispatchQueue(
-        label: "com.human37.open-wispr.system-audio",
+        label: "io.github.pieralukasz.warble.system-audio",
         qos: .userInitiated
     )
     private var audioEngine: AVAudioEngine?
@@ -337,8 +337,8 @@ class AudioRecorder {
             let directory = outputURL.deletingLastPathComponent()
             let token = UUID().uuidString
             return (
-                directory.appendingPathComponent(".open-wispr-\(token)-microphone.wav"),
-                directory.appendingPathComponent(".open-wispr-\(token)-system.wav")
+                directory.appendingPathComponent(".warble-\(token)-microphone.wav"),
+                directory.appendingPathComponent(".warble-\(token)-system.wav")
             )
         }
     }

@@ -1,10 +1,10 @@
 import XCTest
-@testable import OpenWisprLib
+@testable import WarbleKit
 
 final class DaemonLockTests: XCTestCase {
     private func temporaryLockURL() -> URL {
         FileManager.default.temporaryDirectory
-            .appendingPathComponent("open-wispr-lock-\(UUID().uuidString)")
+            .appendingPathComponent("warble-lock-\(UUID().uuidString)")
     }
 
     func testAcquireSucceedsWhenNoDaemonHoldsTheLock() {
@@ -24,7 +24,7 @@ final class DaemonLockTests: XCTestCase {
 
     func testAcquireCreatesMissingParentDirectory() {
         let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("open-wispr-lock-dir-\(UUID().uuidString)")
+            .appendingPathComponent("warble-lock-dir-\(UUID().uuidString)")
         let url = directory.appendingPathComponent("daemon.lock")
         defer { try? FileManager.default.removeItem(at: directory) }
 

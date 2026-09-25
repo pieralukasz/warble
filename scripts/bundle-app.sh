@@ -1,15 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
-BINARY="${1:-.build/release/open-wispr}"
-APP_DIR="${2:-OpenWispr.app}"
-VERSION="${3:-0.3.0}"
+BINARY="${1:-.build/release/warble}"
+APP_DIR="${2:-Warble.app}"
+VERSION="${3:-0.1.0}"
+BUNDLE_ID="io.github.pieralukasz.warble"
 
 rm -rf "$APP_DIR"
 mkdir -p "$APP_DIR/Contents/MacOS"
 mkdir -p "$APP_DIR/Contents/Resources"
 
-cp "$BINARY" "$APP_DIR/Contents/MacOS/open-wispr"
+cp "$BINARY" "$APP_DIR/Contents/MacOS/warble"
 
 find .build -maxdepth 6 -type d -name 'FluidAudio_FluidAudio.bundle' -exec \
     ditto {} "$APP_DIR/Contents/Resources/FluidAudio_FluidAudio.bundle" \; -quit
@@ -24,13 +25,13 @@ cat > "$APP_DIR/Contents/Info.plist" << PLIST
 <plist version="1.0">
 <dict>
     <key>CFBundleExecutable</key>
-    <string>open-wispr</string>
+    <string>warble</string>
     <key>CFBundleIdentifier</key>
-    <string>com.human37.open-wispr</string>
+    <string>${BUNDLE_ID}</string>
     <key>CFBundleName</key>
-    <string>OpenWispr</string>
+    <string>Warble</string>
     <key>CFBundleDisplayName</key>
-    <string>OpenWispr</string>
+    <string>Warble</string>
     <key>CFBundleVersion</key>
     <string>${VERSION}</string>
     <key>CFBundleShortVersionString</key>
@@ -38,19 +39,21 @@ cat > "$APP_DIR/Contents/Info.plist" << PLIST
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
+    <string>26.0</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>MIT License</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>OpenWispr needs microphone access to record speech for transcription.</string>
+    <string>Warble listens only while you hold the dictation key, and transcribes on this Mac.</string>
     <key>NSScreenCaptureUsageDescription</key>
-    <string>OpenWispr needs screen and system audio access to transcribe audio playing on this Mac.</string>
+    <string>Warble needs system audio access to transcribe audio playing on this Mac.</string>
 </dict>
 </plist>
 PLIST
 
-codesign --force --deep --sign - --identifier com.human37.open-wispr "$APP_DIR"
+codesign --force --deep --sign - --identifier "$BUNDLE_ID" "$APP_DIR"
 
 echo "Built $APP_DIR"
