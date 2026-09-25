@@ -144,22 +144,50 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func runPreview(_ scene: PreviewMode.Scene) {
         appState.model = .ready
         appState.transition(to: .idle)
-        let window: NSWindow
+        Task {
+            guard let window = await previewWindow(for: scene) else {
+                print("Preview window not shown")
+                return
+            }
+            print("Preview window \(window.windowNumber)")
+        }
+    }
+
+    /// The status item and the pill appear a moment after launch, so wait
+    /// until the window is on screen before reporting its number.
+    private func previewWindow(for scene: PreviewMode.Scene) async -> NSWindow? {
         switch scene {
         case .main(let name):
-            window = windows.showMain(section: name.section)
-        case .menuBar:
-            statusBar.showPanel()
-            guard let panel = statusBar.panelWindow else { return }
-            window = panel
+            return await keepKey(windows.showMain(section: name.section))
         case .onboarding(let step):
-            window = windows.showOnboarding(startingAt: OnboardingStep(rawValue: step) ?? .welcome)
+            return await keepKey(windows.showOnboarding(startingAt: OnboardingStep(rawValue: step) ?? .welcome))
+        case .menuBar:
+            return await waitUntilVisible {
+                statusBar.showPanel()
+                return statusBar.panelWindow
+            }
         case .pill(let name):
             appState.transition(to: name.phase)
             if name == .recording { simulateSpeech() }
-            window = pill.panel
+            return await waitUntilVisible { pill.panel }
         }
-        print("Preview window \(window.windowNumber)")
+    }
+
+    /// Activation right after launch can lose to the app that launched us,
+    /// so ask again once the window is up; screenshots then show it as key.
+    private func keepKey(_ window: NSWindow) async -> NSWindow {
+        try? await Task.sleep(for: .milliseconds(300))
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+        return window
+    }
+
+    private func waitUntilVisible(_ window: () -> NSWindow?) async -> NSWindow? {
+        for _ in 0..<40 {
+            if let shown = window(), shown.isVisible, shown.windowNumber > 0 { return shown }
+            try? await Task.sleep(for: .milliseconds(50))
+        }
+        return nil
     }
 
     /// A speech-like level pattern so the waveform has shape in screenshots.

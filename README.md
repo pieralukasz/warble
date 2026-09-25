@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="docs-site/public/screenshots/home.png" width="820" alt="Warble main window">
+  <img src="docs-site/public/screenshots/history.png" width="820" alt="Warble main window with History">
 </p>
 
 ## Features

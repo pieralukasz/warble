@@ -240,8 +240,8 @@ function Hero() {
       </div>
       <div className="relative mx-auto max-w-5xl px-6 pb-20">
         <Screenshot
-          name="home"
-          alt="Warble main window, Home screen"
+          name="history"
+          alt="Warble main window with History grouped by day"
           className="my-0"
         />
         <Screenshot

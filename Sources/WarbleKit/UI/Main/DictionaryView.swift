@@ -55,7 +55,8 @@ private struct WordRow: View {
                 Text(entry.spoken).foregroundStyle(.secondary)
                 Image(systemName: "arrow.right").font(.caption).foregroundStyle(.tertiary)
             }
-            Text(entry.written).lineLimit(1)
+            // Multi-line expansions show on one line, with a return symbol per break.
+            Text(entry.written.replacingOccurrences(of: "\n", with: " ⏎ ")).lineLimit(1)
             Spacer()
             Button("Remove", systemImage: "minus.circle.fill") { dictionary.remove(id: entry.id) }
                 .labelStyle(.iconOnly)

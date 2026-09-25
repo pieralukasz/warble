@@ -79,10 +79,17 @@ final class WindowCoordinator: NSObject, NSWindowDelegate {
     private func makeMainWindow() -> NSWindow {
         let controller = NSHostingController(rootView: environment.wrap(MainView()))
         controller.sceneBridgingOptions = [.toolbars, .title]
-        let window = NSWindow(contentViewController: controller)
-        window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
-        window.title = "Warble"
+        let window = NSWindow(
+            contentRect: .zero,
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        // Every pane gets the same unified toolbar, even one with no items,
+        // so the sidebar and title sit the same way in all of them.
+        window.toolbar = NSToolbar(identifier: "WarbleMain")
         window.toolbarStyle = .unified
+        window.contentViewController = controller
         window.setContentSize(NSSize(width: 960, height: 640))
         window.setFrameAutosaveName("WarbleMainWindow")
         window.isReleasedWhenClosed = false

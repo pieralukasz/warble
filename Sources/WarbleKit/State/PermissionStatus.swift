@@ -14,7 +14,11 @@ struct PermissionStatus: Equatable {
     var screenRecording: Bool
 
     static func current() -> PermissionStatus {
-        PermissionStatus(
+        // Previews show the granted state on every Mac, so screenshots match.
+        if PreviewMode.isActive {
+            return PermissionStatus(microphone: .granted, accessibility: true, screenRecording: true)
+        }
+        return PermissionStatus(
             microphone: microphoneStatus(),
             accessibility: AXIsProcessTrusted(),
             screenRecording: Permissions.hasScreenRecording

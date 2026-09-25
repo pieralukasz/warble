@@ -21,9 +21,9 @@ scripts/install.sh   # build, bundle and install to ~/Applications
 WARBLE_PREVIEW=history .build/Warble.app/Contents/MacOS/warble start
 ```
 
-Scenes: `home`, `history`, `dictionary`, `settings`, `onboarding-0` to `onboarding-5`, and `pill-recording`, `pill-transcribing`, `pill-inserted`, `pill-error`.
+Scenes: `menubar`, `history`, `dictionary`, `settings`, `onboarding-0` to `onboarding-5`, and `pill-recording`, `pill-transcribing`, `pill-inserted`, `pill-error`. Permissions always read as granted in preview mode, so every Mac renders the same screens.
 
-`scripts/capture-screenshots.sh` renders them all into `docs-site/public/screenshots`. It uses `screencapture`, so the terminal running it needs Screen Recording permission.
+`scripts/capture-screenshots.sh` renders them all into `docs-site/public/screenshots`. It uses `screencapture`, so the terminal running it needs Screen Recording permission. Each scene is launched with `open`, which brings the window to the front, so captures show it active even when the terminal is in the background.
 
 ## Docs
 

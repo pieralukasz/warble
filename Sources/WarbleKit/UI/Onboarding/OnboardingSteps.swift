@@ -203,7 +203,6 @@ private struct GrantedBadge: View {
     var body: some View {
         Label(text, systemImage: "checkmark.circle.fill")
             .font(.headline)
-            .symbolRenderingMode(.multicolor)
             .foregroundStyle(.green)
     }
 }

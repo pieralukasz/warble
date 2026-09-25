@@ -2,12 +2,13 @@ import { cn } from "@/lib/cn";
 import { asset } from "@/lib/shared";
 
 export type ScreenshotName =
-  | "home"
+  | "menubar"
   | "history"
   | "dictionary"
   | "settings"
   | "onboarding-0"
   | "onboarding-1"
+  | "onboarding-2"
   | "onboarding-3"
   | "onboarding-4"
   | "onboarding-5"
@@ -27,7 +28,7 @@ export function Screenshot({
   alt: string;
   caption?: string;
   className?: string;
-  /** Skip the frame, for the transparent pill captures. */
+  /** Skip the frame, for the transparent pill and menu bar captures. */
   bare?: boolean;
 }) {
   const image = (

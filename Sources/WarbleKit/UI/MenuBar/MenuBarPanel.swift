@@ -12,8 +12,13 @@ struct MenuBarPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             StatusHeader()
-            if case .loading(let fraction, let detail) = appState.model {
+            switch appState.model {
+            case .loading(let fraction, let detail):
                 ModelProgress(fraction: fraction, detail: detail)
+            case .failed(let message):
+                ModelFailure(message: message)
+            default:
+                EmptyView()
             }
             LastDictation()
             QuickControls()
@@ -95,6 +100,22 @@ private struct ModelProgress: View {
                 ProgressView().progressViewStyle(.linear)
             }
             Text(detail).font(.caption).foregroundStyle(.secondary)
+        }
+    }
+}
+
+private struct ModelFailure: View {
+    let message: String
+    @Environment(\.appActions) private var actions
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(message)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button("Try Again", action: actions.retryModel)
+                .buttonStyle(.glassProminent)
         }
     }
 }
