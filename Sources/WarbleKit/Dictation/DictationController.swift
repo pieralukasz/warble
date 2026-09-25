@@ -158,7 +158,7 @@ final class DictationController {
                 RecordingStore.prune(maxCount: Config.effectiveMaxRecordings(config.maxRecordings))
             }
             guard !text.isEmpty else {
-                deps.appState.transition(to: .idle)
+                reportSilence()
                 return
             }
             inserter.insert(text: text)
@@ -193,6 +193,18 @@ final class DictationController {
     private func report(_ error: Error) {
         let message = (error as? AudioCaptureError)?.shortDescription ?? error.localizedDescription
         print("Dictation error: \(error.localizedDescription)")
+        deps.sounds.play(.failure)
+        deps.appState.transition(to: .error(message), resetAfter: Self.ERROR_SECONDS)
+    }
+
+    /// An empty transcription used to hide the pill without a word, which looked
+    /// exactly like a recording that worked but went nowhere.
+    private func reportSilence() {
+        let message = SilentDictation.message(
+            source: config.audioCaptureSource,
+            peakLevel: deps.appState.recordingPeakLevel
+        )
+        print("Dictation produced no text: \(message)")
         deps.sounds.play(.failure)
         deps.appState.transition(to: .error(message), resetAfter: Self.ERROR_SECONDS)
     }

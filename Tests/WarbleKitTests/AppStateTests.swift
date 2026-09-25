@@ -26,6 +26,28 @@ final class AppStateTests: XCTestCase {
         XCTAssertTrue(state.levels.allSatisfy { $0 == 0 })
     }
 
+    func testPeakLevelCoversTheWholeRecording() {
+        let state = AppState()
+        state.transition(to: .recording)
+        state.pushLevel(0.7)
+        for _ in 0..<AppState.LEVEL_HISTORY_COUNT { state.pushLevel(0.1) }
+
+        state.transition(to: .transcribing)
+
+        XCTAssertEqual(state.recordingPeakLevel, 0.7)
+    }
+
+    func testNewRecordingStartsWithZeroPeak() {
+        let state = AppState()
+        state.transition(to: .recording)
+        state.pushLevel(0.7)
+        state.transition(to: .idle)
+
+        state.transition(to: .recording)
+
+        XCTAssertEqual(state.recordingPeakLevel, 0)
+    }
+
     func testTransientPhaseReturnsToIdle() async throws {
         let state = AppState()
 

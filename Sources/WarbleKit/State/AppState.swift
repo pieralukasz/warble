@@ -11,6 +11,9 @@ public final class AppState {
     public private(set) var phase: DictationPhase = .preparing
     public var model: ModelStatus = .notLoaded
     public private(set) var levels: [Float] = Array(repeating: 0, count: LEVEL_HISTORY_COUNT)
+    /// Loudest level of the current or last recording, kept after the waveform
+    /// is cleared so an empty transcription can tell silence from mumbling.
+    public private(set) var recordingPeakLevel: Float = 0
     public var lastTranscription: String?
     public var hotkeySummary: String = ""
 
@@ -23,6 +26,9 @@ public final class AppState {
     public func transition(to phase: DictationPhase, resetAfter delay: TimeInterval? = nil) {
         resetTask?.cancel()
         resetTask = nil
+        if phase == .recording && self.phase != .recording {
+            recordingPeakLevel = 0
+        }
         self.phase = phase
         if phase != .recording {
             resetLevels()
@@ -38,6 +44,7 @@ public final class AppState {
 
     public func pushLevel(_ level: Float) {
         guard phase == .recording else { return }
+        recordingPeakLevel = max(recordingPeakLevel, level)
         levels.removeFirst()
         levels.append(level)
     }
