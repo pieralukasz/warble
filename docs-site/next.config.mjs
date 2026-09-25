@@ -2,7 +2,7 @@ import { createMDX } from "fumadocs-mdx/next";
 
 const withMDX = createMDX();
 
-// GitHub Pages serves the site from /<repository>; the Docs workflow sets this.
+// Empty on Vercel. Set it to serve the static export from a sub-path.
 const basePath = process.env.DOCS_BASE_PATH ?? "";
 
 /** @type {import('next').NextConfig} */

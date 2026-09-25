@@ -4,7 +4,7 @@ export const appName = "Warble";
 export const tagline = "Free, local voice dictation for macOS.";
 export const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-/** Prefixes files from `public/` so they resolve under a GitHub Pages sub-path. */
+/** Prefixes files from `public/` so they resolve when the site has a base path. */
 export function asset(path: string) {
   return `${basePath}${path}`;
 }
@@ -14,7 +14,7 @@ export const docsContentRoute = "/llms.mdx/docs";
 
 export const gitConfig = {
   user: "pieralukasz",
-  repo: "open-wispr-parakeet",
+  repo: "warble",
   branch: "main",
 };
 

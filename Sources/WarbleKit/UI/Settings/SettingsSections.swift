@@ -58,7 +58,7 @@ struct SystemSettingsSection: View {
 struct AboutSection: View {
     @Environment(AppState.self) private var appState
 
-    static let repositoryURL = URL(string: "https://github.com/pieralukasz/open-wispr-parakeet")!
+    static let repositoryURL = URL(string: "https://github.com/pieralukasz/warble")!
 
     var body: some View {
         Section("About") {

@@ -8,8 +8,15 @@ const inter = Inter({
   subsets: ["latin", "latin-ext"],
 });
 
+/** DOCS_SITE_URL wins; on Vercel the production domain is set automatically. */
+function siteUrl() {
+  if (process.env.DOCS_SITE_URL) return process.env.DOCS_SITE_URL;
+  const vercelHost = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  return vercelHost ? `https://${vercelHost}` : "http://localhost:3000";
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.DOCS_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(siteUrl()),
   title: {
     default: `${appName}: ${tagline}`,
     template: `%s · ${appName}`,
