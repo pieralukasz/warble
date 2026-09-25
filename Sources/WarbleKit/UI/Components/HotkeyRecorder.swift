@@ -25,8 +25,8 @@ struct HotkeyRecorder: View {
             }
             .frame(minWidth: 150)
         }
-        .buttonStyle(.glass)
-        .tint(isRecording ? Theme.accent : nil)
+        .buttonStyle(.bordered)
+        .tint(isRecording ? .accentColor : nil)
         .onDisappear(perform: stopRecording)
         .help("Click, then press the key you want to hold while dictating")
     }

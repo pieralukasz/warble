@@ -37,7 +37,6 @@ struct OnboardingView: View {
             footer
         }
         .frame(width: 640, height: 540)
-        .tint(Theme.accent)
         .task { await pollPermissions() }
     }
 
@@ -105,7 +104,7 @@ private struct StepDots: View {
         HStack(spacing: 6) {
             ForEach(OnboardingStep.allCases, id: \.self) { step in
                 Capsule()
-                    .fill(step == current ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.quaternary))
+                    .fill(step == current ? AnyShapeStyle(.tint) : AnyShapeStyle(.quaternary))
                     .frame(width: step == current ? 18 : 6, height: 6)
             }
         }
@@ -123,11 +122,7 @@ struct StepLayout<Controls: View>: View {
 
     var body: some View {
         VStack(spacing: 18) {
-            Image(systemName: symbol)
-                .font(.system(size: 44, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(width: 92, height: 92)
-                .background(Theme.brandGradient, in: .rect(cornerRadius: 24))
+            HeroSymbol(name: symbol, size: 60)
             Text(title)
                 .font(.largeTitle.weight(.bold))
                 .multilineTextAlignment(.center)

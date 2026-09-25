@@ -1,57 +1,59 @@
 import SwiftUI
 
+/// Every dictation in a plain, searchable list grouped by day.
 struct HistoryView: View {
     @Environment(HistoryStore.self) private var history
     @State private var query = ""
+    @State private var selection: HistoryEntry.ID?
     @State private var isConfirmingClear = false
 
     var body: some View {
-        Group {
-            if history.entries.isEmpty {
-                ContentUnavailableView(
-                    "No dictations yet",
-                    systemImage: "waveform",
-                    description: Text("Everything you dictate shows up here, searchable and private.")
-                )
-            } else if results.isEmpty {
-                ContentUnavailableView.search(text: query)
-            } else {
-                list
+        content
+            .navigationTitle("History")
+            .navigationSubtitle(subtitle)
+            .searchable(text: $query, placement: .toolbar, prompt: "Search")
+            .toolbar {
+                ToolbarItem {
+                    Button("Clear History", systemImage: "trash") { isConfirmingClear = true }
+                        .disabled(history.entries.isEmpty)
+                }
             }
-        }
-        .navigationTitle("History")
-        .searchable(text: $query, placement: .toolbar, prompt: "Search dictations")
-        .toolbar {
-            ToolbarItem {
-                Button("Clear History", systemImage: "trash") { isConfirmingClear = true }
-                    .disabled(history.entries.isEmpty)
+            .confirmationDialog("Delete all dictations?", isPresented: $isConfirmingClear) {
+                Button("Delete All", role: .destructive) { history.removeAll() }
+            } message: {
+                Text("The text of every dictation is removed from this Mac. Saved audio files stay in the recordings folder.")
             }
-        }
-        .confirmationDialog("Delete all dictations?", isPresented: $isConfirmingClear) {
-            Button("Delete All", role: .destructive) { history.removeAll() }
-        } message: {
-            Text("The text of every dictation is removed from this Mac. Saved audio files stay in the recordings folder.")
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if history.entries.isEmpty {
+            ContentUnavailableView {
+                Label("No Dictations Yet", systemImage: "waveform")
+            } description: {
+                Text("Hold your dictation key and start talking. Everything you say shows up here.")
+            }
+        } else if results.isEmpty {
+            ContentUnavailableView.search(text: query)
+        } else {
+            List(selection: $selection) {
+                ForEach(groupedByDay, id: \.day) { group in
+                    Section(Self.title(for: group.day)) {
+                        ForEach(group.entries) { HistoryRow(entry: $0) }
+                    }
+                }
+            }
+            .listStyle(.inset)
+            .alternatingRowBackgrounds(.disabled)
         }
     }
 
     private var results: [HistoryEntry] { history.search(query) }
 
-    private var list: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 10, pinnedViews: [.sectionHeaders]) {
-                ForEach(groupedByDay, id: \.day) { group in
-                    Section {
-                        ForEach(group.entries) { HistoryRow(entry: $0) }
-                    } header: {
-                        Text(Self.title(for: group.day))
-                            .font(.headline)
-                            .padding(.vertical, 6)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-            }
-            .padding(Theme.pagePadding)
-        }
+    private var subtitle: String {
+        let stats = history.stats
+        guard stats.dictationCount > 0 else { return "" }
+        return "\(stats.totalWords.formatted()) words · \(stats.wordsPerMinute) wpm · \(stats.minutesSaved) min saved"
     }
 
     private var groupedByDay: [(day: Date, entries: [HistoryEntry])] {

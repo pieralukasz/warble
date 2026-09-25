@@ -5,7 +5,7 @@ set -euo pipefail
 
 APP="${APP:-.build/Warble.app}"
 OUT_DIR="${1:-docs-site/public/screenshots}"
-SCENES=(home history dictionary settings onboarding-0 onboarding-1 onboarding-3 onboarding-4 onboarding-5 pill-recording pill-transcribing pill-inserted)
+SCENES=(menubar history dictionary settings onboarding-0 onboarding-1 onboarding-3 onboarding-4 onboarding-5 pill-recording pill-transcribing pill-inserted)
 SETTLE_SECONDS="${SETTLE_SECONDS:-2.5}"
 
 mkdir -p "$OUT_DIR"

@@ -26,7 +26,8 @@ struct WelcomeStep: View {
         HStack(spacing: 14) {
             Image(systemName: symbol)
                 .font(.title2)
-                .foregroundStyle(Theme.accent)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.tint)
                 .frame(width: 32)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.headline)
@@ -137,7 +138,7 @@ struct ShortcutStep: View {
 
     var body: some View {
         StepLayout(
-            symbol: "globe",
+            symbol: "keyboard",
             title: "Pick your key",
             message: "Hold it to talk. The fn 🌐 key works well on Mac keyboards; Right Option is a good second choice."
         ) {
@@ -182,7 +183,7 @@ struct TryItStep: View {
                 .scrollContentBackground(.hidden)
                 .padding(12)
                 .frame(maxWidth: 460, minHeight: 110, maxHeight: 130)
-                .glassEffect(.regular, in: .rect(cornerRadius: 16))
+                .background(.fill.quaternary, in: .rect(cornerRadius: 12))
         }
         .onAppear {
             startCount = history.entries.count
@@ -202,9 +203,7 @@ private struct GrantedBadge: View {
     var body: some View {
         Label(text, systemImage: "checkmark.circle.fill")
             .font(.headline)
-            .foregroundStyle(Theme.accent)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .glassEffect(.regular, in: .capsule)
+            .symbolRenderingMode(.multicolor)
+            .foregroundStyle(.green)
     }
 }

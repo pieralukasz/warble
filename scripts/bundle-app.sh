@@ -17,7 +17,16 @@ find .build -maxdepth 6 -type d -name 'FluidAudio_FluidAudio.bundle' -exec \
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-cp "$REPO_DIR/Resources/AppIcon.icns" "$APP_DIR/Contents/Resources/AppIcon.icns"
+# Compiles the layered Liquid Glass icon into Assets.car plus a Warble.icns fallback.
+# actool only accepts absolute paths.
+RESOURCES_DIR="$(cd "$APP_DIR/Contents/Resources" && pwd)"
+xcrun actool "$REPO_DIR/Resources/Warble.icon" \
+    --compile "$RESOURCES_DIR" \
+    --output-partial-info-plist "$(mktemp -t warble-icon).plist" \
+    --app-icon Warble --include-all-app-icons \
+    --enable-on-demand-resources NO --development-region en \
+    --target-device mac --minimum-deployment-target 26.0 --platform macosx \
+    --errors --warnings > /dev/null
 
 cat > "$APP_DIR/Contents/Info.plist" << PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -41,7 +50,9 @@ cat > "$APP_DIR/Contents/Info.plist" << PLIST
     <key>LSMinimumSystemVersion</key>
     <string>26.0</string>
     <key>CFBundleIconFile</key>
-    <string>AppIcon</string>
+    <string>Warble</string>
+    <key>CFBundleIconName</key>
+    <string>Warble</string>
     <key>LSUIElement</key>
     <true/>
     <key>NSHumanReadableCopyright</key>

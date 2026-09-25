@@ -9,11 +9,12 @@ import AppKit
 public enum PreviewMode {
     public enum Scene: Equatable {
         case main(MainSectionName)
+        case menuBar
         case onboarding(step: Int)
         case pill(PillName)
     }
 
-    public enum MainSectionName: String { case home, history, dictionary, settings }
+    public enum MainSectionName: String { case history, dictionary, settings }
     public enum PillName: String { case recording, transcribing, inserted, error }
 
     public static var scene: Scene? {
@@ -23,10 +24,11 @@ public enum PreviewMode {
 
     public static var isActive: Bool { scene != nil }
 
-    /// Accepts "home", "settings", "onboarding-3" or "pill-recording".
+    /// Accepts "history", "menubar", "onboarding-3" or "pill-recording".
     public static func parse(_ raw: String) -> Scene? {
         let value = raw.lowercased()
         if let section = MainSectionName(rawValue: value) { return .main(section) }
+        if value == "menubar" { return .menuBar }
         if value.hasPrefix("onboarding-"), let step = Int(value.dropFirst("onboarding-".count)) {
             return .onboarding(step: step)
         }
@@ -44,7 +46,6 @@ public enum PreviewMode {
 extension PreviewMode.MainSectionName {
     var section: MainSection {
         switch self {
-        case .home: return .home
         case .history: return .history
         case .dictionary: return .dictionary
         case .settings: return .settings

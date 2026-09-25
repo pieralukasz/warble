@@ -47,21 +47,27 @@ struct HistoryRow: View {
     @State private var didCopy = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            SourceAppIcon(bundleID: entry.appBundleID)
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            SourceAppIcon(bundleID: entry.appBundleID, size: 20)
+                .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 5 }
+            VStack(alignment: .leading, spacing: 3) {
                 Text(entry.text)
+                    .lineLimit(3)
                     .textSelection(.enabled)
-                    .lineLimit(4)
                 Text(metadata)
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Spacer(minLength: 8)
-            buttons.opacity(isHovering || didCopy ? 1 : 0)
+            Spacer(minLength: 12)
+            actionButtons
+                .opacity(isHovering || didCopy ? 1 : 0)
+            Text(entry.date.formatted(date: .omitted, time: .shortened))
+                .font(.callout)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
         }
-        .padding(14)
-        .glassEffect(.regular, in: .rect(cornerRadius: 14))
+        .padding(.vertical, 4)
+        .contentShape(.rect)
         .onHover { isHovering = $0 }
         .contextMenu { menu }
     }
@@ -73,15 +79,15 @@ struct HistoryRow: View {
     }
 
     private var metadata: String {
-        var parts = [entry.date.formatted(date: .omitted, time: .shortened)]
+        var parts: [String] = []
         if let app = entry.appName { parts.append(app) }
         parts.append("\(entry.wordCount) words")
         parts.append(Duration.seconds(entry.durationSeconds).formatted(.units(allowed: [.minutes, .seconds], width: .narrow)))
         return parts.joined(separator: " · ")
     }
 
-    private var buttons: some View {
-        HStack(spacing: 6) {
+    private var actionButtons: some View {
+        HStack(spacing: 2) {
             if let audioURL {
                 Button {
                     playback.toggle(entry, url: audioURL)
@@ -92,11 +98,12 @@ struct HistoryRow: View {
             }
             Button(action: copy) {
                 Image(systemName: didCopy ? "checkmark" : "doc.on.doc")
+                    .contentTransition(.symbolEffect(.replace))
             }
             .help("Copy text")
         }
-        .buttonStyle(.glass)
-        .controlSize(.small)
+        .buttonStyle(.borderless)
+        .imageScale(.medium)
     }
 
     @ViewBuilder

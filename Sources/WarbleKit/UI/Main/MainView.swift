@@ -1,7 +1,6 @@
 import SwiftUI
 
 enum MainSection: String, CaseIterable, Identifiable, Hashable {
-    case home
     case history
     case dictionary
     case settings
@@ -10,7 +9,6 @@ enum MainSection: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .home: return "Home"
         case .history: return "History"
         case .dictionary: return "Dictionary"
         case .settings: return "Settings"
@@ -19,7 +17,6 @@ enum MainSection: String, CaseIterable, Identifiable, Hashable {
 
     var symbol: String {
         switch self {
-        case .home: return "house"
         case .history: return "clock.arrow.circlepath"
         case .dictionary: return "character.book.closed"
         case .settings: return "gearshape"
@@ -31,9 +28,10 @@ enum MainSection: String, CaseIterable, Identifiable, Hashable {
 @MainActor
 @Observable
 final class MainNavigation {
-    var section: MainSection = .home
+    var section: MainSection = .history
 }
 
+/// The library window: a system sidebar with plain content, like System Settings.
 struct MainView: View {
     @Environment(MainNavigation.self) private var navigation
 
@@ -44,58 +42,60 @@ struct MainView: View {
                 Label(section.title, systemImage: section.symbol)
                     .tag(section)
             }
-            .navigationSplitViewColumnWidth(min: 190, ideal: 210, max: 260)
+            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 240)
             .safeAreaInset(edge: .bottom) {
                 SidebarStatus()
-                    .padding(12)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
             }
         } detail: {
-            detail(for: navigation.section)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            switch navigation.section {
+            case .history: HistoryView()
+            case .dictionary: DictionaryView()
+            case .settings: SettingsView()
+            }
         }
-        .tint(Theme.accent)
-        .frame(minWidth: 780, minHeight: 540)
-    }
-
-    @ViewBuilder
-    private func detail(for section: MainSection) -> some View {
-        switch section {
-        case .home: HomeView()
-        case .history: HistoryView()
-        case .dictionary: DictionaryView()
-        case .settings: SettingsView()
-        }
+        .frame(minWidth: 720, minHeight: 480)
     }
 }
 
-/// A compact line at the bottom of the sidebar that says whether dictation works right now.
+/// One quiet line under the sidebar saying whether dictation works right now.
 private struct SidebarStatus: View {
     @Environment(AppState.self) private var appState
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Circle()
-                .fill(color)
-                .frame(width: 8, height: 8)
-            Text(text)
+                .fill(DictationStatus.color(for: appState))
+                .frame(width: 7, height: 7)
+            Text(DictationStatus.text(for: appState))
                 .font(.callout)
+                .foregroundStyle(.secondary)
                 .lineLimit(1)
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .glassEffect(.regular, in: .capsule)
+    }
+}
+
+/// Shared wording and color for the current state, used by the sidebar and the menu bar panel.
+@MainActor
+enum DictationStatus {
+    static func text(for appState: AppState) -> String {
+        switch appState.model {
+        case .loading(let fraction, _):
+            return fraction.map { "Downloading model · \(Int($0 * 100))%" } ?? "Loading model…"
+        case .failed:
+            return "Model unavailable"
+        default:
+            return appState.phase.statusText
+        }
     }
 
-    private var text: String {
-        if case .loading = appState.model { return "Loading model…" }
-        if case .failed = appState.model { return "Model unavailable" }
-        return appState.phase.statusText
-    }
-
-    private var color: Color {
+    static func color(for appState: AppState) -> Color {
+        if case .failed = appState.model { return .red }
+        guard appState.model.isReady else { return .orange }
         switch appState.phase {
-        case .idle, .inserted, .copied: return appState.model.isReady ? Theme.accent : .orange
+        case .idle, .inserted, .copied: return .green
         case .recording: return .red
         case .transcribing, .preparing: return .orange
         case .needsAccessibility, .error: return .yellow

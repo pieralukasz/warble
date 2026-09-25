@@ -1,36 +1,37 @@
 import AppKit
+import SwiftUI
 
-/// The menu bar item: an icon that mirrors the dictation phase and a short
-/// menu that is rebuilt every time it opens, so it never shows stale state.
+/// The menu bar item. A click opens the glass panel; a right-click or
+/// Control-click shows a short menu. The icon mirrors the dictation phase.
 @MainActor
-final class StatusBarController: NSObject, NSMenuDelegate {
-    struct Actions {
-        let openMain: () -> Void
-        let openSettings: () -> Void
-        let selectLanguage: (String) -> Void
-    }
-
-    /// Recent dictations offered in the menu for one-click copying.
-    static let RECENT_COUNT = 5
+final class StatusBarController: NSObject {
     static let ANIMATION_FPS = 30.0
 
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let appState: AppState
-    private let history: HistoryStore
-    private let actions: Actions
+    private let popover = NSPopover()
+    private let quickMenu = NSMenu()
     private var animationTimer: Timer?
     private var menuTargets: [MenuItemTarget] = []
 
-    init(appState: AppState, history: HistoryStore, actions: Actions) {
+    init(appState: AppState, panel: some View, openSettings: @escaping () -> Void) {
         self.appState = appState
-        self.history = history
-        self.actions = actions
         super.init()
 
-        let menu = NSMenu()
-        menu.delegate = self
-        statusItem.menu = menu
-        statusItem.button?.setAccessibilityLabel("Warble")
+        popover.behavior = .transient
+        popover.animates = true
+        popover.contentViewController = NSHostingController(rootView: panel)
+
+        quickMenu.addItem(item("Settings…", key: ",", action: openSettings))
+        quickMenu.addItem(.separator())
+        quickMenu.addItem(NSMenuItem(title: "Quit Warble", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+
+        if let button = statusItem.button {
+            button.setAccessibilityLabel("Warble")
+            button.target = self
+            button.action = #selector(handleClick(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+        }
         updateIcon()
         observeContinuously({ [weak self] in
             _ = self?.appState.phase
@@ -40,67 +41,32 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         })
     }
 
-    // MARK: - Menu
-
-    func menuNeedsUpdate(_ menu: NSMenu) {
-        menu.removeAllItems()
-        menuTargets = []
-
-        let status = NSMenuItem(title: statusLine(), action: nil, keyEquivalent: "")
-        status.isEnabled = false
-        menu.addItem(status)
-        menu.addItem(.separator())
-
-        menu.addItem(item("Open Warble", key: "o", action: actions.openMain))
-        menu.addItem(item("Settings…", key: ",", action: actions.openSettings))
-        menu.addItem(.separator())
-
-        addRecent(to: menu)
-        menu.addItem(languageMenu())
-        menu.addItem(.separator())
-
-        let quit = NSMenuItem(title: "Quit Warble", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        menu.addItem(quit)
+    /// Opens the panel, for the preview mode and for reopening the app from Finder.
+    func showPanel() {
+        guard let button = statusItem.button, !popover.isShown else { return }
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.contentViewController?.view.window?.makeKey()
     }
 
-    private func statusLine() -> String {
-        if case .loading(let fraction, let detail) = appState.model {
-            let percent = fraction.map { " · \(Int($0 * 100))%" } ?? ""
-            return "\(detail)\(percent)"
-        }
-        if case .failed(let message) = appState.model {
-            return "Model failed: \(message)"
-        }
-        let hint = appState.hotkeySummary.isEmpty ? "" : " · hold \(appState.hotkeySummary)"
-        return appState.phase == .idle ? "Ready\(hint)" : appState.phase.statusText
+    var panelWindow: NSWindow? { popover.contentViewController?.view.window }
+
+    func closePanel() {
+        popover.performClose(nil)
     }
 
-    private func addRecent(to menu: NSMenu) {
-        let recent = history.entries.prefix(Self.RECENT_COUNT)
-        guard !recent.isEmpty else { return }
-
-        let header = NSMenuItem(title: "Recent · click to copy", action: nil, keyEquivalent: "")
-        header.isEnabled = false
-        menu.addItem(header)
-        for entry in recent {
-            let title = entry.text.count > 48 ? String(entry.text.prefix(47)) + "…" : entry.text
-            menu.addItem(item(title, key: "") { Self.copy(entry.text) })
+    @objc private func handleClick(_ sender: NSStatusBarButton) {
+        let event = NSApp.currentEvent
+        let isSecondary = event?.type == .rightMouseUp || event?.modifierFlags.contains(.control) == true
+        if isSecondary {
+            closePanel()
+            statusItem.menu = quickMenu
+            sender.performClick(nil)
+            statusItem.menu = nil
+        } else if popover.isShown {
+            closePanel()
+        } else {
+            showPanel()
         }
-        menu.addItem(.separator())
-    }
-
-    private func languageMenu() -> NSMenuItem {
-        let current = Config.load().language
-        let name = Config.supportedLanguages.first { $0.code == current }?.name ?? current
-        let parent = NSMenuItem(title: "Language: \(name)", action: nil, keyEquivalent: "")
-        let submenu = NSMenu()
-        for language in Config.supportedLanguages {
-            let option = item(language.name, key: "") { [actions] in actions.selectLanguage(language.code) }
-            option.state = language.code == current ? .on : .off
-            submenu.addItem(option)
-        }
-        parent.submenu = submenu
-        return parent
     }
 
     private func item(_ title: String, key: String, action: @escaping () -> Void) -> NSMenuItem {
@@ -109,11 +75,6 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         let item = NSMenuItem(title: title, action: #selector(MenuItemTarget.invoke), keyEquivalent: key)
         item.target = target
         return item
-    }
-
-    private static func copy(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
     }
 
     // MARK: - Icon

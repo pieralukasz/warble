@@ -49,13 +49,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { @MainActor in appState.pushLevel(level) }
         }
         modelLoader = ModelLoader(appState: appState)
-        windows = WindowCoordinator(environment: makeEnvironment())
+        let environment = makeEnvironment()
+        windows = WindowCoordinator(environment: environment)
         pill = RecordingPillController(appState: appState)
-        statusBar = StatusBarController(appState: appState, history: history, actions: .init(
-            openMain: { [weak self] in self?.windows.showMain() },
-            openSettings: { [weak self] in self?.windows.showMain(section: .settings) },
-            selectLanguage: { [weak self] code in self?.settings.update { $0.language = code } }
-        ))
+        statusBar = StatusBarController(
+            appState: appState,
+            panel: environment.wrap(MenuBarPanel()),
+            openSettings: { [weak self] in self?.openMain(.settings) }
+        )
         sleepWake = SleepWakeObserver(
             willSleep: { [weak self] in self?.dictation.cancelForSleep() },
             didWake: { [weak self] in self?.configureRecorder(reload: true) }
@@ -147,6 +148,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         switch scene {
         case .main(let name):
             window = windows.showMain(section: name.section)
+        case .menuBar:
+            statusBar.showPanel()
+            guard let panel = statusBar.panelWindow else { return }
+            window = panel
         case .onboarding(let step):
             window = windows.showOnboarding(startingAt: OnboardingStep(rawValue: step) ?? .welcome)
         case .pill(let name):
@@ -225,6 +230,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             playback: playback,
             actions: AppActions(
                 retryModel: { [weak self] in self?.retryModel() },
+                openMain: { [weak self] section in self?.openMain(section) },
                 retranscribe: { [weak self] url in self?.dictation.retranscribe(audioURL: url) },
                 pauseHotkeys: { [weak self] isPaused in self?.pauseHotkeys(isPaused) },
                 openOnboarding: { [weak self] in self?.windows.showOnboarding() },
@@ -232,6 +238,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                 setLaunchAtLogin: { [weak self] isOn in self?.setLaunchAtLogin(isOn) ?? false }
             )
         )
+    }
+
+    private func openMain(_ section: MainSection) {
+        statusBar.closePanel()
+        windows.showMain(section: section)
     }
 
     private func pauseHotkeys(_ isPaused: Bool) {
@@ -248,7 +259,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             $0.launchAtLoginPrompted = FlexBool(true)
         }
         windows.closeOnboarding()
-        windows.showMain(section: .home)
+        windows.showMain(section: .history)
     }
 
     private func setLaunchAtLogin(_ isOn: Bool) -> Bool {

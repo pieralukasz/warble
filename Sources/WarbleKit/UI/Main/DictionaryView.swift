@@ -1,6 +1,79 @@
 import SwiftUI
 
+/// Words and replacements in a plain list, with a floating glass bar for adding more.
 struct DictionaryView: View {
+    @Environment(DictionaryStore.self) private var dictionary
+
+    var body: some View {
+        list
+            .navigationTitle("Dictionary")
+            .navigationSubtitle("Fixed after every dictation, on this Mac")
+            .safeAreaInset(edge: .bottom) {
+                AddEntryBar()
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+            }
+    }
+
+    @ViewBuilder
+    private var list: some View {
+        if dictionary.entries.isEmpty {
+            ContentUnavailableView {
+                Label("Teach Warble Your Words", systemImage: "character.book.closed")
+            } description: {
+                Text("Add names and jargon so they are always spelled right, or short phrases that expand into longer text.")
+            }
+        } else {
+            List {
+                if !dictionary.words.isEmpty {
+                    Section("Words") {
+                        ForEach(dictionary.words) { WordRow(entry: $0) }
+                    }
+                }
+                if !dictionary.replacements.isEmpty {
+                    Section("Replacements") {
+                        ForEach(dictionary.replacements) { WordRow(entry: $0) }
+                    }
+                }
+                if let problem = dictionary.loadWarning ?? dictionary.saveError {
+                    Label(problem, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
+                }
+            }
+            .listStyle(.inset)
+        }
+    }
+}
+
+private struct WordRow: View {
+    let entry: DictionaryEntry
+    @Environment(DictionaryStore.self) private var dictionary
+    @State private var isHovering = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if entry.kind == .replacement {
+                Text(entry.spoken).foregroundStyle(.secondary)
+                Image(systemName: "arrow.right").font(.caption).foregroundStyle(.tertiary)
+            }
+            Text(entry.written).lineLimit(1)
+            Spacer()
+            Button("Remove", systemImage: "minus.circle.fill") { dictionary.remove(id: entry.id) }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .opacity(isHovering ? 1 : 0)
+        }
+        .padding(.vertical, 2)
+        .contentShape(.rect)
+        .onHover { isHovering = $0 }
+        .contextMenu {
+            Button("Remove", role: .destructive) { dictionary.remove(id: entry.id) }
+        }
+    }
+}
+
+/// The floating bar at the bottom: pick a kind, type, press Return.
+private struct AddEntryBar: View {
     @Environment(DictionaryStore.self) private var dictionary
     @State private var kind: DictionaryEntry.Kind = .word
     @State private var spoken = ""
@@ -8,93 +81,38 @@ struct DictionaryView: View {
     @FocusState private var isSpokenFocused: Bool
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                PageHeader(
-                    title: "Dictionary",
-                    subtitle: "Teach Warble your names, jargon and shortcuts."
-                )
+        GlassEffectContainer {
+            HStack(spacing: 10) {
                 Picker("Kind", selection: $kind) {
-                    Text("Words").tag(DictionaryEntry.Kind.word)
-                    Text("Replacements").tag(DictionaryEntry.Kind.replacement)
+                    Image(systemName: "textformat").tag(DictionaryEntry.Kind.word).help("Word")
+                    Image(systemName: "arrow.2.squarepath").tag(DictionaryEntry.Kind.replacement).help("Replacement")
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .frame(maxWidth: 320)
+                .fixedSize()
 
-                addCard
-                entriesList
-                if let problem = dictionary.loadWarning ?? dictionary.saveError {
-                    Label(problem, systemImage: "exclamationmark.triangle").foregroundStyle(.orange)
+                TextField(kind == .word ? "Add a word or name" : "When I say…", text: $spoken)
+                    .focused($isSpokenFocused)
+                    .onSubmit(add)
+                if kind == .replacement {
+                    Image(systemName: "arrow.right").foregroundStyle(.secondary)
+                    TextField("…type this", text: $written).onSubmit(add)
                 }
-            }
-            .padding(Theme.pagePadding)
-        }
-        .navigationTitle("Dictionary")
-    }
 
-    private var addCard: some View {
-        GlassCard {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(explanation).foregroundStyle(.secondary)
-                HStack(spacing: 10) {
-                    TextField(kind == .word ? "Word or name, e.g. Kubernetes" : "When I say…", text: $spoken)
-                        .focused($isSpokenFocused)
-                        .onSubmit(add)
-                    if kind == .replacement {
-                        Image(systemName: "arrow.right").foregroundStyle(.secondary)
-                        TextField("…type this", text: $written).onSubmit(add)
-                    }
-                    Button("Add", action: add)
-                        .buttonStyle(.glassProminent)
-                        .disabled(!canAdd)
-                        .keyboardShortcut(.defaultAction)
-                }
-                .textFieldStyle(.roundedBorder)
+                Button("Add", systemImage: "plus", action: add)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.glassProminent)
+                    .buttonBorderShape(.circle)
+                    .disabled(!canAdd)
             }
+            .textFieldStyle(.plain)
+            .padding(.leading, 10)
+            .padding(.trailing, 6)
+            .padding(.vertical, 6)
+            .glassEffect(.regular, in: .capsule)
         }
-    }
-
-    private var explanation: String {
-        kind == .word
-            ? "Warble fixes the spelling and capitals of these words after every dictation."
-            : "Say a short phrase and Warble types the full text, like an email address or a sign-off."
-    }
-
-    @ViewBuilder
-    private var entriesList: some View {
-        let entries = kind == .word ? dictionary.words : dictionary.replacements
-        if entries.isEmpty {
-            ContentUnavailableView(
-                kind == .word ? "No words yet" : "No replacements yet",
-                systemImage: kind == .word ? "character.book.closed" : "arrow.2.squarepath"
-            )
-            .frame(maxWidth: .infinity)
-        } else {
-            VStack(spacing: 8) {
-                ForEach(entries) { entry in row(entry) }
-            }
-        }
-    }
-
-    private func row(_ entry: DictionaryEntry) -> some View {
-        HStack {
-            if entry.kind == .word {
-                Text(entry.written).font(.body.weight(.medium))
-            } else {
-                Text("“\(entry.spoken)”").foregroundStyle(.secondary)
-                Image(systemName: "arrow.right").foregroundStyle(.tertiary)
-                Text(entry.written).font(.body.weight(.medium)).lineLimit(1)
-            }
-            Spacer()
-            Button("Remove", systemImage: "xmark") { dictionary.remove(id: entry.id) }
-                .labelStyle(.iconOnly)
-                .buttonStyle(.glass)
-                .controlSize(.small)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .glassEffect(.regular, in: .rect(cornerRadius: 12))
+        .frame(maxWidth: 560)
+        .animation(.smooth, value: kind)
     }
 
     private var canAdd: Bool {

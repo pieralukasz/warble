@@ -4,6 +4,7 @@ import SwiftUI
 /// Things a screen can ask the app to do, injected so views stay free of AppKit wiring.
 struct AppActions {
     var retryModel: @MainActor () -> Void = {}
+    var openMain: @MainActor (MainSection) -> Void = { _ in }
     var retranscribe: @MainActor (URL) -> Void = { _ in }
     var pauseHotkeys: @MainActor (Bool) -> Void = { _ in }
     var openOnboarding: @MainActor () -> Void = {}

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="#FFFFFF">
+  <!-- Two sound arcs leaving the beak, drawn as filled bands so the glass renders cleanly. -->
+  <path d="M 725.5 363.0 A 115.0 115.0 0 0 1 725.5 517.0 A 20.0 20.0 0 0 1 695.7 490.2 A 75.0 75.0 0 0 0 695.7 389.8 A 20.0 20.0 0 0 1 725.5 363.0 Z"/>
+  <path d="M 793.7 319.9 A 195.0 195.0 0 0 1 793.7 560.1 A 20.0 20.0 0 0 1 762.1 535.4 A 155.0 155.0 0 0 0 762.1 344.6 A 20.0 20.0 0 0 1 793.7 319.9 Z"/>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" fill="#FFFFFF">
+  <!-- Parakeet in profile facing right: round head, full chest, back sloping into a long tail. -->
+  <path d="
+    M 445 250
+    C 520 245 585 290 600 360
+    C 612 420 600 470 575 520
+    C 545 585 495 640 440 680
+    L 330 870
+    C 320 888 296 884 300 864
+    L 345 700
+    C 300 665 268 600 272 525
+    C 276 440 318 380 360 320
+    C 382 282 410 252 445 250 Z"/>
+  <!-- Second tail feather, slightly shorter. -->
+  <path d="M 420 690 L 262 845 C 250 858 232 846 242 832 L 368 660 Z"/>
+  <!-- Hooked beak. -->
+  <path d="M 588 330 C 640 330 672 362 670 405 C 669 432 654 452 634 460 C 642 437 634 416 612 411 L 590 409 Z"/>
+</svg>
