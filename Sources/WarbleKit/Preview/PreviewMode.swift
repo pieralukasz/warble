@@ -6,6 +6,7 @@ import AppKit
 /// screen can be captured with `screencapture -l <number>`.
 ///
 ///     WARBLE_PREVIEW=history Warble.app/Contents/MacOS/warble
+///     WARBLE_PREVIEW=menubar WARBLE_APPEARANCE=dark Warble.app/Contents/MacOS/warble
 public enum PreviewMode {
     public enum Scene: Equatable {
         case main(MainSectionName)
@@ -23,6 +24,13 @@ public enum PreviewMode {
     }
 
     public static var isActive: Bool { scene != nil }
+
+    public enum Appearance: String { case light, dark }
+
+    /// `WARBLE_APPEARANCE=dark` renders the scene in Dark Mode; unset follows the system.
+    public static var appearance: Appearance? {
+        ProcessInfo.processInfo.environment["WARBLE_APPEARANCE"].flatMap { Appearance(rawValue: $0.lowercased()) }
+    }
 
     /// Accepts "history", "menubar", "onboarding-3" or "pill-recording".
     public static func parse(_ raw: String) -> Scene? {

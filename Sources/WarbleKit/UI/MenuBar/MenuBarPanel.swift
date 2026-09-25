@@ -48,6 +48,7 @@ struct MenuBarPanel: View {
 
 private struct StatusHeader: View {
     @Environment(AppState.self) private var appState
+    @Environment(SettingsModel.self) private var settings
 
     var body: some View {
         HStack(spacing: 12) {
@@ -84,7 +85,8 @@ private struct StatusHeader: View {
 
     private var hint: String {
         if appState.phase == .needsAccessibility { return "Allow Accessibility in System Settings" }
-        return "Hold \(appState.hotkeySummary) to dictate"
+        let verb = settings.isToggleMode ? "Press" : "Hold"
+        return "\(verb) \(appState.hotkeySummary) to dictate"
     }
 }
 

@@ -9,7 +9,7 @@ VERSION="$(sed -n 's/.*version = "\(.*\)".*/\1/p' Sources/WarbleKit/Version.swif
 APP_DIR="$HOME/Applications/Warble.app"
 BIN_DIR="$HOME/.local/bin"
 
-echo "Building Warble $VERSION…"
+echo "Building Warble ${VERSION}…"
 swift build --disable-sandbox -c release
 scripts/bundle-app.sh .build/release/warble .build/Warble.app "$VERSION"
 

@@ -166,6 +166,7 @@ struct ShortcutStep: View {
 
 struct TryItStep: View {
     @Environment(AppState.self) private var appState
+    @Environment(SettingsModel.self) private var settings
     @Environment(HistoryStore.self) private var history
     @State private var text = ""
     @State private var startCount: Int?
@@ -175,7 +176,9 @@ struct TryItStep: View {
         StepLayout(
             symbol: "waveform",
             title: didDictate ? "That’s all there is to it" : "Give it a try",
-            message: "Click the box, hold \(appState.hotkeySummary) and say something. Let go to see it typed."
+            message: settings.isToggleMode
+                ? "Click the box, press \(appState.hotkeySummary), say something, then press it again to see it typed."
+                : "Click the box, hold \(appState.hotkeySummary) and say something. Let go to see it typed."
         ) {
             TextEditor(text: $text)
                 .font(.title3)

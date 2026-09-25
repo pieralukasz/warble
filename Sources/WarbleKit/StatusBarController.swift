@@ -44,6 +44,10 @@ final class StatusBarController: NSObject {
     /// Opens the panel, for the preview mode and for reopening the app from Finder.
     func showPanel() {
         guard let button = statusItem.button, !popover.isShown else { return }
+        // A status item popover defaults to the vibrant light look even in
+        // Dark Mode, which puts dark text on dark glass. Follow the app instead.
+        let isDark = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        popover.appearance = NSAppearance(named: isDark ? .darkAqua : .aqua)
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
     }

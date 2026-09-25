@@ -65,6 +65,10 @@ cat > "$APP_DIR/Contents/Info.plist" << PLIST
 </plist>
 PLIST
 
-codesign --force --deep --sign - --identifier "$BUNDLE_ID" "$APP_DIR"
+# An ad-hoc signature is pinned to this exact build's hash, so macOS would
+# forget the Microphone and Accessibility grants after every rebuild. Naming
+# the bundle identifier as the requirement keeps them across updates.
+codesign --force --deep --sign - --identifier "$BUNDLE_ID" \
+    --requirements "=designated => identifier \"$BUNDLE_ID\"" "$APP_DIR"
 
 echo "Built $APP_DIR"

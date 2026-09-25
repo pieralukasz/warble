@@ -25,6 +25,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var modelLoader: ModelLoader!
     private var sleepWake: SleepWakeObserver?
     private var hasShownScreenRecordingAlert = false
+    private var previewBackdrop: NSWindow?
+    private var previewActivation: NSObjectProtocol?
+    private var previewDeactivation: NSObjectProtocol?
+
+    /// Close to the default macOS wallpapers' calm areas, light and dark.
+    static let LIGHT_BACKDROP = NSColor(calibratedRed: 0.93, green: 0.94, blue: 0.96, alpha: 1)
+    static let DARK_BACKDROP = NSColor(calibratedRed: 0.11, green: 0.12, blue: 0.14, alpha: 1)
 
     public override init() {
         if PreviewMode.isActive, let files = try? PreviewData.seed() {
@@ -144,12 +151,28 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func runPreview(_ scene: PreviewMode.Scene) {
         appState.model = .ready
         appState.transition(to: .idle)
+        if let appearance = PreviewMode.appearance {
+            NSApp.appearance = NSAppearance(named: appearance == .dark ? .darkAqua : .aqua)
+        }
         Task {
             guard let window = await previewWindow(for: scene) else {
                 print("Preview window not shown")
                 return
             }
             print("Preview window \(window.windowNumber)")
+            // The capture script waits for this line, so windows are shot as key.
+            if NSApp.isActive { print("Preview active") }
+            previewActivation = NotificationCenter.default.addObserver(
+                forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
+            ) { _ in
+                MainActor.assumeIsolated { window.makeKeyAndOrderFront(nil) }
+                print("Preview active")
+            }
+            previewDeactivation = NotificationCenter.default.addObserver(
+                forName: NSApplication.didResignActiveNotification, object: nil, queue: .main
+            ) { _ in
+                print("Preview inactive")
+            }
         }
     }
 
@@ -162,15 +185,39 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         case .onboarding(let step):
             return await keepKey(windows.showOnboarding(startingAt: OnboardingStep(rawValue: step) ?? .welcome))
         case .menuBar:
-            return await waitUntilVisible {
+            let panel = await waitUntilVisible {
                 statusBar.showPanel()
                 return statusBar.panelWindow
             }
+            return await settleOnBackdrop(panel)
         case .pill(let name):
             appState.transition(to: name.phase)
             if name == .recording { simulateSpeech() }
-            return await waitUntilVisible { pill.panel }
+            return await settleOnBackdrop(await waitUntilVisible { pill.panel })
         }
+    }
+
+    /// Glass shows whatever sits behind it, so a capture of the panel or the
+    /// pill alone depends on the screen. A plain window underneath makes
+    /// every capture look the same, in the colors of the chosen appearance.
+    private func settleOnBackdrop(_ window: NSWindow?) async -> NSWindow? {
+        guard let window else { return nil }
+        let backdrop = NSWindow(
+            contentRect: window.frame.insetBy(dx: -40, dy: -40),
+            styleMask: .borderless,
+            backing: .buffered,
+            defer: false
+        )
+        let isDark = NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        backdrop.backgroundColor = isDark ? Self.DARK_BACKDROP : Self.LIGHT_BACKDROP
+        backdrop.ignoresMouseEvents = true
+        backdrop.isReleasedWhenClosed = false
+        backdrop.level = window.level
+        backdrop.order(.below, relativeTo: window.windowNumber)
+        previewBackdrop = backdrop
+        // Give the glass a moment to sample its new background.
+        try? await Task.sleep(for: .milliseconds(400))
+        return window
     }
 
     /// Activation right after launch can lose to the app that launched us,
