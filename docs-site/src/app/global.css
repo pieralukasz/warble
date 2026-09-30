@@ -25,20 +25,6 @@ html > body[data-scroll-locked] {
   --removed-body-scroll-bar-size: 0px !important;
 }
 
-.warble-glow {
-  background:
-    radial-gradient(
-      60% 50% at 50% 0%,
-      hsla(153, 64%, 45%, 0.28),
-      transparent 70%
-    ),
-    radial-gradient(
-      40% 40% at 85% 20%,
-      hsla(185, 70%, 45%, 0.18),
-      transparent 70%
-    );
-}
-
 /* One-line steps are shorter than their 2rem number badge, so the badges
    overlapped. Give each step the badge's height and a gap below it. */
 .fd-step:not(:has(h2, h3, h4)) {

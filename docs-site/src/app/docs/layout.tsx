@@ -1,4 +1,4 @@
-import { DocsLayout } from "fumadocs-ui/layouts/docs";
+import { DocsLayout } from "fumadocs-ui/layouts/flux";
 import { baseOptions } from "@/lib/layout.shared";
 import { authorUrl } from "@/lib/shared";
 import { source } from "@/lib/source";

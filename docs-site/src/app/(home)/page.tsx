@@ -88,42 +88,37 @@ export default function HomePage() {
     <main className="flex flex-col">
       <Hero />
       <Section eyebrow="How it works" title="Three moves, no clicks">
-        <div className="grid gap-4 md:grid-cols-3">
+        <ol className="grid gap-10 sm:grid-cols-3 sm:gap-8">
           {steps.map((step, index) => (
-            <div key={step.title} className="rounded-2xl border bg-fd-card p-6">
-              <div className="mb-4 flex items-center gap-3">
-                <span className="flex size-10 items-center justify-center rounded-xl bg-fd-primary/15 text-fd-primary">
-                  <step.icon className="size-5" />
-                </span>
-                <span className="text-sm font-medium text-fd-muted-foreground">
-                  Step {index + 1}
-                </span>
+            <li key={step.title} className="border-t pt-5">
+              <div className="flex items-center gap-2 text-sm font-medium text-fd-muted-foreground">
+                <step.icon className="size-4 text-fd-primary" />
+                Step {index + 1}
               </div>
-              <h3 className="text-lg font-semibold">{step.title}</h3>
+              <h3 className="mt-3 text-lg font-semibold">{step.title}</h3>
               <p className="mt-1 text-fd-muted-foreground">{step.text}</p>
-            </div>
+            </li>
           ))}
-        </div>
+        </ol>
       </Section>
 
       <Section
         eyebrow="Features"
         title="Everything a dictation app should do, and nothing it shouldn’t"
       >
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="grid gap-x-12 gap-y-9 sm:grid-cols-2">
           {features.map((feature) => (
-            <div
-              key={feature.title}
-              className="rounded-2xl border bg-fd-card p-6"
-            >
-              <feature.icon className="mb-4 size-6 text-fd-primary" />
-              <h3 className="font-semibold">{feature.title}</h3>
-              <p className="mt-1 text-sm text-fd-muted-foreground">
-                {feature.text}
-              </p>
-            </div>
+            <li key={feature.title} className="flex gap-4">
+              <feature.icon className="mt-0.5 size-5 shrink-0 text-fd-primary" />
+              <div>
+                <h3 className="font-semibold">{feature.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-fd-muted-foreground">
+                  {feature.text}
+                </p>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       </Section>
 
       <Section
@@ -151,7 +146,7 @@ export default function HomePage() {
 
       <Section eyebrow="Privacy" title="What leaves your Mac? Nothing.">
         <div className="grid gap-6 lg:grid-cols-2">
-          <ul className="flex flex-col justify-between gap-5 rounded-2xl border bg-fd-card p-6">
+          <ul className="flex flex-col justify-center gap-5">
             {privacyFacts.map((line) => (
               <li key={line} className="flex gap-3">
                 <Lock className="mt-0.5 size-5 shrink-0 text-fd-primary" />
@@ -159,9 +154,9 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
-          <div className="overflow-hidden rounded-2xl border bg-fd-card">
+          <div className="overflow-hidden border-y">
             <table className="h-full w-full table-fixed text-sm">
-              <thead className="bg-fd-muted">
+              <thead>
                 <tr>
                   <th className="w-[38%] px-5 py-3.5 text-left font-medium" />
                   <th className="px-5 py-3.5 text-left font-semibold text-fd-primary">
@@ -196,17 +191,15 @@ export default function HomePage() {
         </p>
       </Section>
 
-      <section className="mx-auto w-full max-w-5xl px-6 pb-24">
-        <div className="warble-glow rounded-3xl border bg-fd-card px-8 py-14 text-center">
-          <h2 className="text-3xl font-bold tracking-tight">
-            Start talking to your Mac
-          </h2>
-          <p className="mx-auto mt-3 max-w-xl text-fd-muted-foreground">
-            Build it from source in one command. Setup walks you through
-            permissions and the model download.
-          </p>
-          <CallToAction className="mt-8 justify-center" />
-        </div>
+      <section className="mx-auto w-full max-w-3xl px-6 pt-8 pb-32 text-center">
+        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          Start talking to your Mac
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-fd-muted-foreground">
+          Build it from source in one command. Setup walks you through
+          permissions and the model download.
+        </p>
+        <CallToAction className="mt-8 justify-center" />
       </section>
 
       <footer className="border-t py-10 text-center text-sm text-fd-muted-foreground">
@@ -241,38 +234,31 @@ export default function HomePage() {
 
 function Hero() {
   return (
-    <section className="warble-glow relative overflow-hidden">
-      <div className="mx-auto flex max-w-5xl flex-col items-center px-6 pt-20 pb-12 text-center">
-        {/* biome-ignore lint/performance/noImgElement: static export serves plain files */}
-        <img
-          src={asset("/icon-256.png")}
-          alt="Warble icon"
-          width={96}
-          height={96}
-          className="mb-6 drop-shadow-xl"
-        />
-        <span className="mb-5 rounded-full border bg-fd-card px-3 py-1 text-xs font-medium text-fd-muted-foreground">
-          Free · Open source · Runs on your Mac
-        </span>
-        <h1 className="text-5xl font-bold tracking-tight sm:text-6xl">
-          Your voice, <span className="text-fd-primary">typed.</span>
-        </h1>
-        <p className="mt-5 max-w-2xl text-lg text-fd-muted-foreground">
-          Hold a key, speak, let go. Warble turns speech into text in any Mac
-          app with NVIDIA Parakeet, without the cloud, the account or the
-          subscription.
-        </p>
-        <CallToAction className="mt-8 justify-center" />
-      </div>
-      <div className="relative mx-auto max-w-5xl px-6 pb-20">
-        <Screenshot
-          name="history"
-          alt="Warble main window with History grouped by day"
-          className="my-0"
-        />
-        <div className="absolute inset-x-0 bottom-8 flex justify-center">
-          <LivePill />
-        </div>
+    <section className="mx-auto flex w-full max-w-4xl flex-col items-center px-6 pt-28 pb-24 text-center sm:pt-36">
+      {/* biome-ignore lint/performance/noImgElement: static export serves plain files */}
+      <img
+        src={asset("/icon-256.png")}
+        alt="Warble icon"
+        width={64}
+        height={64}
+        className="mb-10"
+      />
+      <p className="text-sm font-medium text-fd-muted-foreground">
+        Free · Open source · Runs on your Mac
+      </p>
+      <h1 className="mt-6 text-5xl font-extrabold tracking-tight text-balance sm:text-7xl">
+        Hold a key, speak, <span className="text-fd-primary">let go.</span>
+      </h1>
+      <p className="mt-8 max-w-xl text-lg leading-relaxed text-fd-muted-foreground">
+        <span className="font-semibold text-fd-foreground">
+          Your voice, typed.
+        </span>{" "}
+        Warble turns speech into text in any Mac app with NVIDIA Parakeet,
+        without the cloud, the account or the subscription.
+      </p>
+      <CallToAction className="mt-10 justify-center" />
+      <div className="mt-20 flex h-28 w-full max-w-md items-center justify-center rounded-full bg-fd-muted/60">
+        <LivePill />
       </div>
     </section>
   );
@@ -307,11 +293,13 @@ function Section({
   children: ReactNode;
 }) {
   return (
-    <section className="mx-auto w-full max-w-5xl px-6 py-16">
-      <p className="text-sm font-semibold uppercase tracking-wider text-fd-primary">
+    <section className="mx-auto w-full max-w-4xl px-6 py-20">
+      <p className="text-center text-sm font-medium text-fd-primary">
         {eyebrow}
       </p>
-      <h2 className="mt-2 mb-8 text-3xl font-bold tracking-tight">{title}</h2>
+      <h2 className="mx-auto mt-3 mb-12 max-w-2xl text-center text-3xl font-bold tracking-tight text-balance">
+        {title}
+      </h2>
       {children}
     </section>
   );
