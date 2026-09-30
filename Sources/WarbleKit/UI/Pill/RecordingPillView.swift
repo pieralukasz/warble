@@ -6,6 +6,8 @@ import SwiftUI
 struct RecordingPillView: View {
     @Environment(AppState.self) private var appState
     @Namespace private var namespace
+    /// Drag and close support; `nil` keeps the pill still.
+    var mover: MovablePill?
 
     static let HEIGHT: CGFloat = 40
     static let MORPH = Animation.spring(response: 0.42, dampingFraction: 0.72)
@@ -16,6 +18,7 @@ struct RecordingPillView: View {
                 shape(for: content)
                     .glassEffect(content.glass, in: .capsule)
                     .glassEffectID("pill", in: namespace)
+                    .movablePill(mover, closeLabel: "Hide for This Dictation")
                     .transition(.scale(scale: 0.5, anchor: .bottom).combined(with: .opacity))
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel(appState.phase.statusText)
