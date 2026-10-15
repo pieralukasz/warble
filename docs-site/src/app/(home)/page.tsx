@@ -1,319 +1,660 @@
-import {
-  AppWindow,
-  BookA,
-  Cpu,
-  Heart,
-  History,
-  Keyboard,
-  Lock,
-  Mic,
-  Sparkles,
-  Type,
-} from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { LivePill } from "@/components/live-pill";
-import { Screenshot } from "@/components/screenshot";
+import { DictationDemo } from "@/components/home/dictation-demo";
+import { Reveal } from "@/components/home/reveal";
+import { SearchButton } from "@/components/home/search-button";
+import { WindowShowcase } from "@/components/home/window-showcase";
 import { asset, authorUrl, repoUrl } from "@/lib/shared";
 
-const steps = [
+const parts = [
   {
-    icon: Keyboard,
-    title: "Hold fn",
-    text: "Or any key you pick. Warble listens only while it is held.",
+    id: "pill",
+    name: "The recording pill",
+    line: "One piece of Liquid Glass near the bottom of the screen: waveform, dots, then a check mark.",
   },
   {
-    icon: Mic,
-    title: "Speak",
-    text: "A glass pill shows your voice, so you know it is working.",
+    id: "key",
+    name: "Your key",
+    line: "fn, Right ⌘, F5 or Ctrl+Space. Hold it, or press once to start and once to stop.",
   },
   {
-    icon: Type,
-    title: "Let go",
-    text: "Parakeet transcribes on your Mac and the text lands at the cursor.",
+    id: "toggles",
+    name: "Quick toggles",
+    line: "Language, mode, pill and sounds, one click away in the menu bar.",
   },
-];
+  {
+    id: "punctuation",
+    name: "Spoken punctuation",
+    line: "Say “comma”, “period” or “new line” when it is switched on.",
+  },
+  {
+    id: "dictionary",
+    name: "Replacements",
+    line: "Say “my email” and get the address. Rules run on your Mac after every dictation.",
+  },
+  {
+    id: "setup",
+    name: "Setup",
+    line: "Permissions, the speech model, your key and language, then a practice run.",
+  },
+  {
+    id: "cli",
+    name: "Command line",
+    line: "Status, hotkey, language, autostart, and transcribing an audio file.",
+  },
+  {
+    id: "typed",
+    name: "Typed",
+    line: "The check mark stays for 1.2 seconds, then the pill is gone.",
+  },
+] as const;
 
-const features = [
+const trip = [
   {
-    icon: Cpu,
-    title: "Parakeet v3, on-device",
-    text: "NVIDIA’s TDT model runs on Apple’s Neural Engine through FluidAudio. 25 European languages, all on your Mac. Downloaded once, then fully offline.",
+    heading: "While you hold the key",
+    rows: [
+      ["Recording", "16 kHz mono audio, from your input", "while held"],
+      ["A brushed key", "is ignored, nothing is typed", "under 0.25 s"],
+    ],
   },
   {
-    icon: AppWindow,
-    title: "Works in every app",
-    text: "Mail, Slack, Xcode, the browser, a terminal. If it has a text cursor, Warble can type into it.",
+    heading: "After you let go",
+    rows: [
+      ["Parakeet TDT v3", "transcribes on the Neural Engine", "on your Mac"],
+      ["Spoken punctuation", "turns “comma” into a comma", "if switched on"],
+      ["Your dictionary", "fixes names, expands shortcuts", "on your Mac"],
+      ["The text", "is pasted at the cursor", "in the app in front"],
+      ["The pill", "shows a check mark", "for 1.2 s"],
+      ["Your clipboard", "is put back as it was", "after 1 s"],
+      ["History", "keeps the text and the app’s name", "Application Support"],
+    ],
   },
-  {
-    icon: Sparkles,
-    title: "Made for macOS 26",
-    text: "Native SwiftUI with Liquid Glass. A menu bar app first, with a proper window when you want one.",
-  },
-  {
-    icon: History,
-    title: "Searchable history",
-    text: "Every dictation is kept on your Mac with the app it went into. Copy it, replay the audio, or delete it.",
-  },
-  {
-    icon: BookA,
-    title: "Your own dictionary",
-    text: "Fix names and jargon, or turn “my email” into your address. Rules run locally after every dictation.",
-  },
-  {
-    icon: Heart,
-    title: "Free, for real",
-    text: "No account, no subscription, no word limit. MIT licensed, so you can read and change every line.",
-  },
-];
+] as const;
 
-const privacyFacts = [
-  "Audio is recorded only while the key is held and transcribed in memory.",
-  "Text, history and your dictionary are plain JSON files in Application Support.",
-  "The only network request is the one-time model download from Hugging Face.",
-  "No analytics, no crash reporting, no account. Check the source to be sure.",
-];
+const promises = [
+  ["No account", "Nothing to sign up for or log in to."],
+  ["No subscription", "Free, with no word limit."],
+  ["Offline", "After one model download from Hugging Face."],
+  ["Mic on, key down", "Audio is recorded only while you hold the key."],
+  ["Plain JSON", "History and dictionary in Application Support."],
+  ["No analytics", "No crash reporting either."],
+] as const;
 
 const comparison = [
-  ["Price", "Free forever", "Subscription, or a capped free plan"],
+  ["Price", "Free", "Subscription, or a capped free plan"],
   ["Word limit", "None", "Weekly cap on free plans"],
   ["Where speech is processed", "On your Mac", "Remote servers"],
   ["Account", "None", "Required"],
   ["Works offline", "Yes", "No"],
   ["Source code", "Open, MIT", "Closed"],
-];
+] as const;
+
+const languages = [
+  ["EN", "English"],
+  ["PL", "Polish"],
+  ["DE", "German"],
+  ["FR", "French"],
+  ["ES", "Spanish"],
+  ["IT", "Italian"],
+  ["PT", "Portuguese"],
+  ["NL", "Dutch"],
+  ["SV", "Swedish"],
+  ["CS", "Czech"],
+] as const;
+
+const footerLinks = [
+  {
+    title: "Use it",
+    links: [
+      ["Installation", "/docs/installation"],
+      ["Your first dictation", "/docs/first-run"],
+      ["Dictating", "/docs/dictating"],
+      ["Dictionary", "/docs/dictionary"],
+    ],
+  },
+  {
+    title: "Reference",
+    links: [
+      ["Settings", "/docs/settings"],
+      ["Languages", "/docs/languages"],
+      ["Command line", "/docs/cli"],
+      ["Troubleshooting", "/docs/troubleshooting"],
+    ],
+  },
+  {
+    title: "Source",
+    links: [
+      ["GitHub", repoUrl],
+      ["Issues", `${repoUrl}/issues`],
+      ["Architecture", "/docs/architecture"],
+      ["Contributing", "/docs/contributing"],
+    ],
+  },
+] as const;
+
+const WORDMARK = ["W", "a", "r", "b", "l", "e"] as const;
 
 export default function HomePage() {
   return (
-    <main className="flex flex-col">
+    <main className="wb-main">
+      <Nav />
       <Hero />
-      <Section eyebrow="How it works" title="Three moves, no clicks">
-        <ol className="grid gap-10 sm:grid-cols-3 sm:gap-8">
-          {steps.map((step, index) => (
-            <li key={step.title} className="border-t pt-5">
-              <div className="flex items-center gap-2 text-sm font-medium text-fd-muted-foreground">
-                <step.icon className="size-4 text-fd-primary" />
-                Step {index + 1}
-              </div>
-              <h3 className="mt-3 text-lg font-semibold">{step.title}</h3>
-              <p className="mt-1 text-fd-muted-foreground">{step.text}</p>
-            </li>
-          ))}
-        </ol>
-      </Section>
 
-      <Section
-        eyebrow="Features"
-        title="Everything a dictation app should do, and nothing it shouldn’t"
-      >
-        <ul className="grid gap-x-12 gap-y-9 sm:grid-cols-2">
-          {features.map((feature) => (
-            <li key={feature.title} className="flex gap-4">
-              <feature.icon className="mt-0.5 size-5 shrink-0 text-fd-primary" />
-              <div>
-                <h3 className="font-semibold">{feature.title}</h3>
-                <p className="mt-1 text-sm leading-relaxed text-fd-muted-foreground">
-                  {feature.text}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </Section>
-
-      <Section
-        eyebrow="A look inside"
-        title="History, dictionary and settings in one window"
-      >
-        <div className="grid gap-6 lg:grid-cols-3">
-          <Screenshot
-            name="history"
-            alt="History screen grouped by day"
-            caption="History, grouped by day"
-          />
-          <Screenshot
-            name="dictionary"
-            alt="Dictionary with words and replacements"
-            caption="Words and replacements"
-          />
-          <Screenshot
-            name="settings"
-            alt="Settings form"
-            caption="Settings that save as you go"
-          />
-        </div>
-      </Section>
-
-      <Section eyebrow="Privacy" title="What leaves your Mac? Nothing.">
-        <div className="grid gap-6 lg:grid-cols-2">
-          <ul className="flex flex-col justify-center gap-5">
-            {privacyFacts.map((line) => (
-              <li key={line} className="flex gap-3">
-                <Lock className="mt-0.5 size-5 shrink-0 text-fd-primary" />
-                <span>{line}</span>
-              </li>
-            ))}
-          </ul>
-          <div className="overflow-hidden border-y">
-            <table className="h-full w-full table-fixed text-sm">
-              <thead>
-                <tr>
-                  <th className="w-[38%] px-5 py-3.5 text-left font-medium" />
-                  <th className="px-5 py-3.5 text-left font-semibold text-fd-primary">
-                    Warble
-                  </th>
-                  <th className="px-5 py-3.5 text-left font-medium text-fd-muted-foreground">
-                    Typical cloud dictation
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {comparison.map(([label, warble, cloud]) => (
-                  <tr key={label} className="border-t">
-                    <td className="px-5 py-3.5 text-fd-muted-foreground">
-                      {label}
-                    </td>
-                    <td className="px-5 py-3.5 font-medium">{warble}</td>
-                    <td className="px-5 py-3.5 text-fd-muted-foreground">
-                      {cloud}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <p className="mt-6 text-sm text-fd-muted-foreground">
-          Warble is not the only app that keeps speech on your Mac. Handy,
-          VoiceInk, Superwhisper and MacWhisper run local models too. Warble’s
-          take is a native macOS 26 app on the Neural Engine, free and MIT
-          licensed, that does dictation and nothing else.
-        </p>
-      </Section>
-
-      <section className="mx-auto w-full max-w-3xl px-6 pt-8 pb-32 text-center">
-        <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          Start talking to your Mac
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-fd-muted-foreground">
-          Build it from source in one command. Setup walks you through
-          permissions and the model download.
-        </p>
-        <CallToAction className="mt-8 justify-center" />
+      <section className="wb-section wb-showcase" aria-label="The app">
+        <WindowShowcase />
       </section>
 
-      <footer className="border-t py-10 text-center text-sm text-fd-muted-foreground">
-        <p>
-          Made by{" "}
-          <a
-            className="font-medium text-fd-foreground underline underline-offset-4"
-            href={authorUrl}
-          >
-            Lucas Piera
-          </a>
-          .
-        </p>
-        <p className="mt-2">
-          MIT licensed. Built on{" "}
-          <a
-            className="underline"
-            href="https://github.com/FluidInference/FluidAudio"
-          >
-            FluidAudio
-          </a>{" "}
-          and NVIDIA Parakeet, grown from{" "}
-          <a className="underline" href="https://github.com/human37/open-wispr">
-            open-wispr
-          </a>
-          .
-        </p>
-      </footer>
+      <Parts />
+      <Trip />
+      <Promises />
+      <ParakeetBand />
+      <Languages />
+      <Install />
+      <Footer />
+      <Reveal />
     </main>
+  );
+}
+
+function Nav() {
+  return (
+    <header className="wb-nav">
+      <Link href="/" className="wb-wordmark">
+        {/* biome-ignore lint/performance/noImgElement: static export serves plain files */}
+        <img src={asset("/icon-256.png")} alt="" width={32} height={32} />
+        Warble
+      </Link>
+      <nav aria-label="Main" className="wb-nav-links">
+        <Link className="wb-link" href="/docs">
+          Docs
+        </Link>
+        <Link className="wb-link" href="/docs/languages">
+          Languages
+        </Link>
+        <Link className="wb-link" href="/docs/privacy">
+          Privacy
+        </Link>
+        <a className="wb-link" href={repoUrl}>
+          GitHub
+        </a>
+        <SearchButton className="wb-link wb-link-button" />
+      </nav>
+      <Link href="/docs/installation" className="wb-button wb-button-small">
+        Install
+      </Link>
+    </header>
   );
 }
 
 function Hero() {
   return (
-    <section className="mx-auto flex w-full max-w-4xl flex-col items-center px-6 pt-28 pb-24 text-center sm:pt-36">
-      {/* biome-ignore lint/performance/noImgElement: static export serves plain files */}
-      <img
-        src={asset("/icon-256.png")}
-        alt="Warble icon"
-        width={64}
-        height={64}
-        className="mb-10"
-      />
-      <p className="text-sm font-medium text-fd-muted-foreground">
-        Free · Open source · Runs on your Mac
-      </p>
-      <h1 className="mt-6 text-5xl font-extrabold tracking-tight text-balance sm:text-7xl">
-        Hold a key, speak, <span className="text-fd-primary">let go.</span>
-      </h1>
-      <p className="mt-8 max-w-xl text-lg leading-relaxed text-fd-muted-foreground">
-        <span className="font-semibold text-fd-foreground">
-          Your voice, typed.
-        </span>{" "}
-        Warble turns speech into text in any Mac app with NVIDIA Parakeet,
-        without the cloud, the account or the subscription.
-      </p>
-      <CallToAction className="mt-10 justify-center" />
-      <div className="mt-20 flex h-28 w-full max-w-md items-center justify-center rounded-full bg-fd-muted/60">
-        <LivePill />
+    <section className="wb-hero">
+      <div className="wb-hero-copy">
+        <h1 className="wb-hero-title">
+          <span className="wb-line">
+            <span data-line style={{ "--i": 0 } as React.CSSProperties}>
+              Hold a key,
+            </span>
+          </span>
+          <span className="wb-line">
+            <span data-line style={{ "--i": 1 } as React.CSSProperties}>
+              speak, let go.
+            </span>
+          </span>
+        </h1>
+        <p
+          className="wb-hero-lead"
+          data-rise
+          style={{ "--i": 2 } as React.CSSProperties}
+        >
+          Free dictation for macOS. Warble types what you say into any app, and
+          NVIDIA Parakeet transcribes it on your Mac.
+        </p>
+        <div
+          className="wb-actions"
+          data-rise
+          style={{ "--i": 3 } as React.CSSProperties}
+        >
+          <Link href="/docs/installation" className="wb-button">
+            Install Warble
+          </Link>
+          <a className="wb-link wb-link-strong" href={repoUrl}>
+            Source on GitHub
+          </a>
+        </div>
+      </div>
+      <div className="wb-hero-stage">
+        <DictationDemo />
       </div>
     </section>
   );
 }
 
-function CallToAction({ className }: { className?: string }) {
+function Parts() {
   return (
-    <div className={`flex flex-wrap gap-3 ${className ?? ""}`}>
-      <Link
-        href="/docs/installation"
-        className="rounded-full bg-fd-primary px-6 py-3 font-medium text-fd-primary-foreground transition hover:opacity-90"
-      >
-        Install Warble
-      </Link>
-      <a
-        href={repoUrl}
-        className="inline-flex items-center gap-2 rounded-full border bg-fd-card px-6 py-3 font-medium transition hover:bg-fd-accent"
-      >
-        <GitHubMark /> View on GitHub
-      </a>
-    </div>
-  );
-}
-
-function Section({
-  eyebrow,
-  title,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="mx-auto w-full max-w-4xl px-6 py-20">
-      <p className="text-center text-sm font-medium text-fd-primary">
-        {eyebrow}
-      </p>
-      <h2 className="mx-auto mt-3 mb-12 max-w-2xl text-center text-3xl font-bold tracking-tight text-balance">
-        {title}
-      </h2>
-      {children}
+    <section className="wb-section wb-parts" aria-labelledby="parts-heading">
+      <div className="wb-board">
+        <div className="wb-tile wb-tile-heading" data-reveal>
+          <h2 id="parts-heading">The parts you touch</h2>
+        </div>
+        {parts.map((part) => (
+          <figure
+            key={part.id}
+            className={`wb-tile wb-tile-${part.id}`}
+            data-reveal
+          >
+            <PartPicture id={part.id} />
+            <figcaption>
+              <strong>{part.name}</strong>
+              <span>{part.line}</span>
+            </figcaption>
+          </figure>
+        ))}
+      </div>
     </section>
   );
 }
 
-function GitHubMark() {
+function PartPicture({ id }: { id: (typeof parts)[number]["id"] }) {
+  switch (id) {
+    case "pill":
+      return (
+        // biome-ignore lint/performance/noImgElement: static export serves plain files
+        <img
+          className="wb-crop wb-crop-pill"
+          src={asset("/screenshots/pill-recording.png")}
+          width={720}
+          height={144}
+          alt="The recording pill while listening, with a live waveform"
+          loading="lazy"
+          decoding="async"
+        />
+      );
+    case "typed":
+      return (
+        // biome-ignore lint/performance/noImgElement: static export serves plain files
+        <img
+          className="wb-crop wb-crop-typed"
+          src={asset("/screenshots/pill-inserted.png")}
+          width={720}
+          height={144}
+          alt="The pill as a small circle with a check mark after the text is typed"
+          loading="lazy"
+          decoding="async"
+        />
+      );
+    case "setup":
+      return (
+        // biome-ignore lint/performance/noImgElement: static export serves plain files
+        <img
+          className="wb-crop wb-crop-setup"
+          src={asset("/screenshots/onboarding-4.png")}
+          width={1280}
+          height={1144}
+          alt="Setup step where you pick your key and language"
+          loading="lazy"
+          decoding="async"
+        />
+      );
+    case "key":
+      return (
+        <div className="wb-macro wb-macro-key" data-ui aria-hidden="true">
+          <span className="wb-cap">fn</span>
+        </div>
+      );
+    case "toggles":
+      return (
+        <div className="wb-macro wb-macro-toggles" data-ui aria-hidden="true">
+          <span className="wb-round">PL</span>
+          <span className="wb-round">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <rect
+                x="3"
+                y="7"
+                width="18"
+                height="10"
+                rx="5"
+                fill="currentColor"
+              />
+            </svg>
+          </span>
+        </div>
+      );
+    case "punctuation":
+      return (
+        <div className="wb-macro wb-macro-punct" data-ui aria-hidden="true">
+          <span>
+            comma <b>,</b>
+          </span>
+        </div>
+      );
+    case "dictionary":
+      return (
+        <div className="wb-macro wb-macro-dict" data-ui aria-hidden="true">
+          <span className="wb-dict-from">my email</span>
+          <span className="wb-dict-arrow">→</span>
+          <span className="wb-dict-to">hello@example.com</span>
+        </div>
+      );
+    case "cli":
+      return (
+        <div className="wb-macro wb-macro-cli" data-ui aria-hidden="true">
+          <code>warble set-language pl</code>
+        </div>
+      );
+  }
+}
+
+function Trip() {
   return (
-    <svg
-      viewBox="0 0 16 16"
-      className="size-4"
-      fill="currentColor"
-      aria-hidden="true"
+    <section
+      className="wb-section wb-trip"
+      aria-label="What happens between the key and the text"
     >
-      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
-    </svg>
+      {trip.map((part, partIndex) => (
+        <div key={part.heading} className="wb-trip-part" data-reveal>
+          {partIndex === 0 ? (
+            <h2 className="wb-trip-heading">{part.heading}</h2>
+          ) : (
+            <h3 className="wb-trip-heading">{part.heading}</h3>
+          )}
+          <table className="wb-trip-table">
+            <tbody>
+              {part.rows.map(([what, does, when]) => (
+                <tr key={what}>
+                  <th scope="row">{what}</th>
+                  <td>{does}</td>
+                  <td>{when}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function Promises() {
+  return (
+    <section
+      className="wb-section wb-promises"
+      aria-labelledby="privacy-heading"
+    >
+      <ul className="wb-capsules">
+        <li className="wb-capsule wb-capsule-heading" data-reveal>
+          <h2 id="privacy-heading">Nothing leaves your Mac</h2>
+        </li>
+        {promises.map(([name, line]) => (
+          <li key={name} className="wb-capsule" data-reveal>
+            <strong>{name}</strong>
+            <span>{line}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="wb-compare" data-reveal>
+        <table className="wb-compare-table">
+          <thead>
+            <tr>
+              <th scope="col">
+                <span className="wb-sr">Compared</span>
+              </th>
+              <th scope="col">Warble</th>
+              <th scope="col">Typical cloud dictation</th>
+            </tr>
+          </thead>
+          <tbody>
+            {comparison.map(([label, warble, cloud]) => (
+              <tr key={label}>
+                <th scope="row">{label}</th>
+                <td>{warble}</td>
+                <td>{cloud}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="wb-compare-note">
+          Warble is not the only app that keeps speech on your Mac. Handy,
+          VoiceInk, Superwhisper and MacWhisper run local models too. Warble’s
+          take is a native macOS 26 app on the Neural Engine, free and MIT
+          licensed, that does dictation and nothing else.{" "}
+          <Link className="wb-link wb-link-strong" href="/docs/privacy">
+            Read the privacy page
+          </Link>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function ParakeetBand() {
+  return (
+    <section className="wb-band" aria-labelledby="parakeet-heading">
+      <figure className="wb-band-picture" data-reveal>
+        <div className="wb-band-mask wb-shutter">
+          {/* biome-ignore lint/performance/noImgElement: static export serves plain files */}
+          <img
+            src={asset("/home/parakeet-jakuchu.webp")}
+            width={1428}
+            height={1600}
+            alt="Woodblock print of a green parakeet on a branch of dark red seed pods under large green leaves, on a black ground"
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+        <figcaption>
+          “Parakeet”, after a design by Itō Jakuchū, ca. 1900. The Metropolitan
+          Museum of Art, public domain.
+        </figcaption>
+      </figure>
+      <div className="wb-band-copy" data-reveal>
+        <h2 id="parakeet-heading">The model is called Parakeet</h2>
+        <p>
+          NVIDIA Parakeet TDT v3 runs on the Neural Engine through FluidAudio.
+          It downloads once, about 500 MB, and then works offline.
+        </p>
+        <p>
+          Warble began as a fork of open-wispr by human37, with one narrow goal:
+          fast, local dictation in Polish. Its config still carries over on
+          first launch.
+        </p>
+        <p>
+          For whole calls and meetings with the speakers told apart, there is{" "}
+          <a
+            className="wb-link wb-link-strong"
+            href="https://github.com/pieralukasz/echopad"
+          >
+            EchoPad
+          </a>
+          , built on the same model.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function Languages() {
+  return (
+    <section
+      className="wb-section wb-languages"
+      aria-labelledby="languages-heading"
+    >
+      <ul className="wb-words">
+        <li className="wb-word wb-word-heading" data-reveal>
+          <h2 id="languages-heading">25 languages</h2>
+          <span>or Auto-Detect</span>
+        </li>
+        {languages.map(([code, name]) => (
+          <li key={code} className="wb-word" data-reveal>
+            <b lang={code.toLowerCase()}>{code}</b>
+            <span>{name}</span>
+          </li>
+        ))}
+        <li className="wb-word wb-word-more" data-reveal>
+          <Link href="/docs/languages">
+            <b>+18</b>
+            <span>All 28 codes</span>
+          </Link>
+        </li>
+      </ul>
+    </section>
+  );
+}
+
+function Install() {
+  return (
+    <section
+      className="wb-section wb-install"
+      aria-labelledby="install-heading"
+    >
+      <h2 id="install-heading" className="wb-install-heading">
+        Install in one command
+      </h2>
+      <ol className="wb-grow">
+        <li className="wb-grow-stage" data-reveal>
+          <div className="wb-grow-tile wb-grow-a">
+            <pre>
+              <code>
+                git clone https://github.com/
+                <wbr />
+                pieralukasz/warble.git
+              </code>
+            </pre>
+          </div>
+          <p className="wb-grow-name">First, clone it</p>
+          <p className="wb-grow-line">
+            Needs macOS 26 and Xcode 26 or its Command Line Tools (Swift 6.2).
+          </p>
+        </li>
+        <li className="wb-grow-stage" data-reveal>
+          <div className="wb-grow-tile wb-grow-b">
+            <pre>
+              <code>cd warble{"\n"}scripts/install.sh</code>
+            </pre>
+          </div>
+          <p className="wb-grow-name">Then run the script</p>
+          <p className="wb-grow-line">
+            It builds a release, puts Warble.app in ~/Applications and links the
+            warble command.
+          </p>
+        </li>
+        <li className="wb-grow-stage" data-reveal>
+          <div className="wb-grow-tile wb-grow-c">
+            {/* biome-ignore lint/performance/noImgElement: static export serves plain files */}
+            <img
+              src={asset("/screenshots/onboarding-0.png")}
+              width={1280}
+              height={1144}
+              alt="Warble’s setup window: Welcome to Warble"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          <p className="wb-grow-name">Setup does the rest</p>
+          <p className="wb-grow-line">
+            Microphone and Accessibility, the 500 MB model, your key, a practice
+            dictation.
+          </p>
+        </li>
+      </ol>
+      <div className="wb-install-after" data-reveal>
+        <p>
+          Using a coding agent? Point Claude Code or Codex at the repository and
+          ask it to follow the{" "}
+          <Link
+            className="wb-link wb-link-strong"
+            href="/docs/installation#for-agents"
+          >
+            install steps for agents
+          </Link>
+          . Only the Microphone and Accessibility prompts need you. Coming from
+          open-wispr? Warble imports its config on first launch.
+        </p>
+        <Link href="/docs/installation" className="wb-button">
+          Install Warble
+        </Link>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="wb-footer">
+      <div className="wb-mark" role="img" aria-label="Warble">
+        {WORDMARK.map((letter, index) => (
+          <span
+            // biome-ignore lint/suspicious/noArrayIndexKey: the letters never reorder
+            key={index}
+            className="wb-mark-block"
+            aria-hidden="true"
+            style={{ "--i": index } as React.CSSProperties}
+          >
+            {letter}
+          </span>
+        ))}
+      </div>
+      <div className="wb-footer-grid">
+        {footerLinks.map((column) => (
+          <div key={column.title} className="wb-footer-col">
+            <h2>{column.title}</h2>
+            <ul>
+              {column.links.map(([label, href]) => (
+                <li key={label}>
+                  {href.startsWith("http") ? (
+                    <a className="wb-link" href={href}>
+                      {label}
+                    </a>
+                  ) : (
+                    <Link className="wb-link" href={href}>
+                      {label}
+                    </Link>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        <div className="wb-footer-col wb-footer-credits">
+          <p>
+            Made by{" "}
+            <a className="wb-link wb-link-strong" href={authorUrl}>
+              Lucas Piera
+            </a>
+            . Built on{" "}
+            <a
+              className="wb-link wb-link-strong"
+              href="https://github.com/FluidInference/FluidAudio"
+            >
+              FluidAudio
+            </a>{" "}
+            and NVIDIA Parakeet, grown from{" "}
+            <a
+              className="wb-link wb-link-strong"
+              href="https://github.com/human37/open-wispr"
+            >
+              open-wispr
+            </a>
+            .
+          </p>
+          <p>
+            Picture:{" "}
+            <a
+              className="wb-link wb-link-strong"
+              href="https://www.metmuseum.org/art/collection/search/57121"
+            >
+              “Parakeet” by Itō Jakuchū
+            </a>
+            , ca. 1900, public domain (CC0), via The Metropolitan Museum of Art.
+          </p>
+        </div>
+      </div>
+      <div className="wb-footer-last">
+        <p>Free and open source, MIT licensed.</p>
+        <Link href="/docs/installation" className="wb-button wb-button-small">
+          Install
+        </Link>
+      </div>
+    </footer>
   );
 }
