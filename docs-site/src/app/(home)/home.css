@@ -1775,3 +1775,166 @@
     grid-column: 1 / -1;
   }
 }
+
+/* Phone, simpler: shorter sections, crops sized so the UI text stays
+   readable, and tiles that hold their whole ornament. */
+
+@media (max-width: 720px) {
+  .wb {
+    --section: 88px;
+  }
+
+  /* Showcase: a crop of the window's content area, peeking out of the
+     field. History, Dictionary and Settings share the same layout. */
+  .wb-show-stage {
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: 28px;
+    overflow: hidden;
+    background: var(--field);
+    transition: background-color 300ms ease;
+  }
+
+  .wb-show-capsule {
+    display: none;
+  }
+
+  .wb-show-shot {
+    left: 16px;
+    top: 16px;
+    bottom: auto;
+    width: calc((100% - 16px) * 1920 / 820);
+    height: auto;
+    max-width: none;
+    margin-left: calc((100% - 16px) * -436 / 820);
+    transform: none;
+    clip-path: inset(0 0 0 22.7% round 14px 0 0 0);
+  }
+
+  .wb-show-shot.is-square {
+    left: 50%;
+    top: 50%;
+    width: calc(100% - 24px);
+    height: auto;
+    margin: 0;
+    transform: translate(-50%, -50%);
+    clip-path: none;
+  }
+
+  /* Parts: every tile shows its whole ornament. */
+  .wb-board > .wb-tile-pill,
+  .wb-board > .wb-tile-dictionary,
+  .wb-board > .wb-tile-setup {
+    grid-row: span 2;
+  }
+
+  .wb-crop-pill {
+    top: 4px;
+  }
+
+  [data-ui].wb-macro-dict {
+    right: 24px;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    font-size: 22px;
+  }
+
+  .wb-board > .wb-tile-typed {
+    grid-column: span 1;
+    grid-row: span 2;
+    order: 2;
+  }
+
+  .wb-crop-typed {
+    width: 260%;
+    left: -80%;
+    top: 0;
+  }
+
+  .wb-board > .wb-tile-cli {
+    grid-column: 1 / -1;
+    grid-row: span 1;
+    order: 3;
+  }
+
+  [data-ui].wb-macro-cli code {
+    font-size: 17px;
+  }
+
+  .wb-board > .wb-tile-setup {
+    order: 4;
+  }
+
+  /* Setup: only the key and language card, at a readable size. */
+  .wb-crop-setup {
+    top: 24px;
+    right: auto;
+    left: calc(16px - (100% - 32px) * 260 / 760);
+    width: calc((100% - 32px) * 1280 / 760);
+    margin-top: calc((100% - 32px) * -604 / 760);
+    border-radius: 0;
+    clip-path: inset(52.8% 20.31% 33.57% 20.31% round 8px);
+  }
+
+  /* Promises: capsules as tall as their text. */
+  .wb-capsule {
+    min-height: 0;
+    padding: 18px 32px;
+  }
+
+  .wb-capsule-heading {
+    padding: 28px 32px;
+  }
+
+  .wb-band {
+    gap: 32px;
+    padding: 64px var(--margin);
+  }
+
+  .wb-band-picture {
+    width: 64%;
+  }
+
+  /* Languages: three across, the heading on its own row. */
+  .wb-words {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wb-word-heading {
+    grid-column: 1 / -1;
+    aspect-ratio: auto;
+    padding: 22px;
+  }
+
+  .wb-word b {
+    font-size: 10.5vw;
+  }
+
+  .wb-word.wb-word-more {
+    grid-column: span 2;
+    aspect-ratio: auto;
+  }
+
+  /* Install: code tiles as tall as their code; the setup window cropped
+     to its icon and title. */
+  .wb-grow-a,
+  .wb-grow-b {
+    min-height: 0;
+  }
+
+  .wb-grow-c {
+    height: auto;
+    padding: 24px;
+    justify-content: center;
+  }
+
+  .wb-grow-c img {
+    position: static;
+    flex: none;
+    width: 200%;
+    margin: calc(100% * -130 / 640) calc(100% * -320 / 640)
+      calc(100% * -644 / 640);
+    border-radius: 0;
+    clip-path: inset(11.36% 25% 56.29% 25% round 14px);
+  }
+}
