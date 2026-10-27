@@ -50,7 +50,7 @@ jobs:
       - name: Transcribe a Polish sample end to end
         shell: pwsh
         run: |
-          $text = .\target\release\warble.exe transcribe tests\fixtures\polish-sample.wav
+          $text = .\target\release\warble.exe transcribe tests\fixtures\polish-sample.wav | Out-String
           Write-Host "Transcript: $text"
           if ($LASTEXITCODE -ne 0) { exit 1 }
           if ($text -notmatch "dobry" -or $text -notmatch "komputerze" -or $text -notmatch "Windows") {

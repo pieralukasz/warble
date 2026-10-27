@@ -11,7 +11,7 @@ Wersja na Windows jest w katalogu `windows/` tego repozytorium (Rust + Tauri). W
 ## Zasady dla agenta
 
 - Pracuj w PowerShell. Nie potrzebujesz uprawnień administratora; nie uruchamiaj niczego „jako administrator”.
-- `warble.exe` to program okienkowy. Gdy wywołujesz jego komendy z PowerShell, dopisuj `| Out-Host`, inaczej PowerShell nie poczeka na wynik.
+- `warble.exe` to program okienkowy. Gdy wywołujesz jego komendy z PowerShell, zawsze dopisuj `| Out-Host` (albo `| Out-String`, gdy zapisujesz wynik do zmiennej). Bez tego PowerShell nie czeka na wynik i nic się nie wypisze.
 - Nie zmieniaj ustawień prywatności Windows bez pytania użytkownika; jeśli trzeba, poprowadź go krok po kroku.
 - Na koniec przeprowadź z użytkownikiem test z sekcji „Sprawdzenie” i zgłoś wynik.
 
