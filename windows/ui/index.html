@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Warble</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="sidebar" aria-label="Sections">
+    <div class="brand"><img src="icon.png" alt="" width="28" height="28"><span>Warble</span></div>
+    <button class="nav" data-page="home" aria-current="page">Home</button>
+    <button class="nav" data-page="dictionary">Dictionary</button>
+    <button class="nav" data-page="history">History</button>
+    <button class="nav" data-page="settings">Settings</button>
+    <p class="version" id="version"></p>
+  </nav>
+
+  <main>
+    <section id="page-home" class="page">
+      <h1>Hold a key, speak, let go.</h1>
+      <p class="lead" id="how-to"></p>
+
+      <div class="panel" id="model-panel">
+        <h2>Speech model</h2>
+        <p id="model-text">Checking…</p>
+        <div class="progress" id="model-progress" hidden><div id="model-bar"></div></div>
+        <button class="primary" id="model-download" hidden>Download the model</button>
+      </div>
+
+      <div class="panel" id="last-panel">
+        <h2>Last dictation</h2>
+        <p id="last-text" class="muted">Nothing yet. Put the cursor in any text field and try the shortcut.</p>
+        <button id="last-copy" hidden>Copy</button>
+      </div>
+
+      <div class="panel warn" id="warnings" hidden>
+        <h2>Needs attention</h2>
+        <ul id="warning-list"></ul>
+      </div>
+    </section>
+
+    <section id="page-dictionary" class="page" hidden>
+      <h1>Dictionary</h1>
+      <p class="lead">Words fix spelling (“github” becomes “GitHub”). Replacements turn a spoken phrase into text, like “my email” into an address.</p>
+      <div class="tabs" role="tablist">
+        <button role="tab" class="tab" data-kind="word" aria-selected="true">Words</button>
+        <button role="tab" class="tab" data-kind="replacement" aria-selected="false">Replacements</button>
+      </div>
+      <form id="dict-form" class="row">
+        <input id="dict-spoken" placeholder="Word, e.g. GitHub" aria-label="Word or spoken phrase" required>
+        <input id="dict-written" placeholder="Becomes, e.g. lucas@example.com" aria-label="Replacement text" hidden>
+        <button class="primary" type="submit">Add</button>
+      </form>
+      <p class="error" id="dict-error" role="alert"></p>
+      <ul class="list" id="dict-list"></ul>
+      <p class="empty" id="dict-empty" hidden>No entries yet.</p>
+    </section>
+
+    <section id="page-history" class="page" hidden>
+      <h1>History</h1>
+      <div class="row">
+        <input id="history-search" type="search" placeholder="Search dictations" aria-label="Search dictations">
+        <button id="history-clear" class="danger">Clear all</button>
+      </div>
+      <p class="error" id="history-error" role="alert"></p>
+      <div id="history-list"></div>
+      <p class="empty" id="history-empty" hidden>No dictations yet.</p>
+    </section>
+
+    <section id="page-settings" class="page" hidden>
+      <h1>Settings</h1>
+      <p class="error" id="settings-general-error" role="alert"></p>
+      <div class="setting">
+        <div>
+          <h2>Shortcut</h2><p class="muted">Pick a combination no other program uses.</p>
+          <p class="error" id="settings-error" role="alert"></p>
+        </div>
+        <button id="hotkey-button" class="hotkey"></button>
+      </div>
+
+      <fieldset class="setting">
+        <legend><h2>Mode</h2></legend>
+        <label><input type="radio" name="mode" value="hold"> Hold the shortcut while speaking</label>
+        <label><input type="radio" name="mode" value="toggle"> Press once to start, again to stop</label>
+      </fieldset>
+
+      <div class="setting">
+        <div><h2>Microphone</h2><p class="muted">“Windows default” follows the system setting.</p></div>
+        <select id="microphone" aria-label="Microphone"></select>
+      </div>
+
+      <label class="setting check"><input type="checkbox" id="show-pill"> <span><b>Show the pill</b><br><span class="muted">A small status bar at the bottom of the screen while you speak.</span></span></label>
+      <label class="setting check"><input type="checkbox" id="spoken-punctuation"> <span><b>Spoken punctuation</b><br><span class="muted">Say “comma”, “period”, “new line” in English to type them.</span></span></label>
+      <label class="setting check"><input type="checkbox" id="keep-clipboard"> <span><b>Keep the text on the clipboard</b><br><span class="muted">Otherwise Warble puts back what you had copied before.</span></span></label>
+      <label class="setting check"><input type="checkbox" id="autostart"> <span><b>Start with Windows</b><br><span class="muted">Warble waits in the tray, next to the clock.</span></span></label>
+
+      <div class="setting paths">
+        <h2>Files</h2>
+        <p class="muted">Settings, dictionary and history: <code id="data-dir"></code></p>
+        <p class="muted">Speech model: <code id="models-dir"></code></p>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

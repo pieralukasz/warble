@@ -1,0 +1,54 @@
+[package]
+name = "warble-windows"
+version = "0.1.0"
+edition = "2021"
+description = "Warble for Windows: hold a key, speak, let go. Local dictation with NVIDIA Parakeet."
+license = "MIT"
+repository = "https://github.com/pieralukasz/warble"
+default-run = "warble"
+
+[lib]
+name = "warble_win"
+path = "src/lib.rs"
+
+[[bin]]
+name = "warble"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+regex = "1"
+dirs = "6"
+log = "0.4"
+cpal = "0.15"
+hound = "3.5"
+transcribe-rs = { version = "0.3.12", features = ["onnx"] }
+# transcribe-rs asks for ort ^2.0.0-rc.12, but rc.13+ changed the API it calls.
+ort = "=2.0.0-rc.12"
+enigo = "0.6"
+arboard = "3"
+ureq = "2"
+sha2 = "0.10"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+  "Win32_Foundation",
+  "Win32_System_Console",
+  "Win32_System_Threading",
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_WindowsAndMessaging",
+] }
+
+[profile.release]
+strip = true
+codegen-units = 1

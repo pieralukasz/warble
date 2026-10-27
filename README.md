@@ -110,6 +110,12 @@ Coming from open-wispr? Warble imports `~/.config/open-wispr/config.json` on fir
 
 Uninstall with `scripts/uninstall.sh`, or `scripts/uninstall.sh --purge` to also delete settings, history and dictionary.
 
+### Windows
+
+A Windows version lives in [`windows/`](windows): the same hold-to-talk dictation with Parakeet TDT v3, running on the CPU through ONNX Runtime, built with Rust and Tauri. It sits in the tray, types at the cursor with the clipboard and Ctrl+V, and keeps a dictionary and history in the same JSON format as the Mac app. Installers are attached to the `windows-v*` [releases](https://github.com/pieralukasz/warble/releases); CI builds it on Windows and transcribes a Polish sample end to end on every change.
+
+Setting it up with an AI agent, or by hand: [WINDOWS.md](WINDOWS.md) (in Polish). Development: `cd windows && cargo test`, then `bunx @tauri-apps/cli@2 build`.
+
 ## Command line
 
 ```text
