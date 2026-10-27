@@ -120,6 +120,39 @@ warble transcribe-file <path>     Transcribe an audio file and print the text
 warble enable-autostart           Start at login
 ```
 
+## Headless data commands
+
+The existing binary also exposes dictionary and history records without launching the app or loading the speech model:
+
+```bash
+.build/debug/warble dictionary words list
+.build/debug/warble dictionary words add 'Łukasz'
+.build/debug/warble dictionary replacements add 'my email' 'test@example.invalid'
+.build/debug/warble dictionary replacements list
+.build/debug/warble dictionary words remove '<UUID from list>'
+.build/debug/warble history list --query 'Notes' --limit 20
+.build/debug/warble history show '<UUID from list>'
+.build/debug/warble history export > history-export.json
+.build/debug/warble settings show
+.build/debug/warble --json status
+```
+
+Data commands return JSON on stdout (ISO-8601 dates); failures return `{"error":"…"}` on stderr and exit 1. Success exits 0. `--json` is optional for data commands and goes **before** the command. `status --json` is also accepted. Structured status reports data paths and counts, not daemon health; legacy `status` remains the human-readable configuration summary.
+
+Quit Warble before dictionary edits: writes take the daemon lock and refuse while the app or another writer holds it. Adds reject case-insensitive duplicates within the same category; remove by UUID then add to replace a rule. Empty text, unknown IDs and invalid arguments fail. Files are saved atomically and read back. Restart Warble after edits. Reads do not migrate, create, quarantine or repair files; corrupt files fail without being overwritten. History and settings data commands are read-only. Export is JSON to stdout, not an audio archive; choose a new destination and do not redirect over application data files.
+
+For isolated work, put global options **before** the command:
+
+```bash
+.build/debug/warble --data-dir "$FIXTURE_DIR" --json dictionary words add 'Test'
+.build/debug/warble --data-dir "$FIXTURE_DIR" settings show
+python3 scripts/test-cli.py
+```
+
+`--data-dir` keeps `dictionary.json`, `history.json`, `config.json` and `daemon.lock` together in that directory. It applies only to dictionary, history, settings and structured status: daemon startup, transcription and legacy config mutations are rejected with these options. Without it, dictionary/history use `~/Library/Application Support/Warble`, settings use `~/.config/warble/config.json`. Never use a live data directory as a fixture. No install is needed: run `swift build`, then `.build/debug/warble`.
+
+Agent workflow: [skills/warble-cli/SKILL.md](skills/warble-cli/SKILL.md).
+
 ## Documentation
 
 The full guide is at **[warble.lucaspiera.com](https://warble.lucaspiera.com)**: dictating, the dictionary, settings, languages, the CLI, the config file, privacy and troubleshooting. Its source lives in [`docs-site`](docs-site), built with [Fumadocs](https://fumadocs.dev):

@@ -16,6 +16,27 @@ description: The warble command for scripting and quick changes.
 | `warble enable-autostart` | Start Warble at login. |
 | `warble disable-autostart` | Stop starting Warble at login. |
 
+## Dictionary, history and machine-readable output
+
+```bash
+warble dictionary words list
+warble dictionary words add 'Łukasz'
+warble dictionary replacements add 'my email' 'test@example.invalid'
+warble dictionary replacements list
+warble dictionary words remove '<UUID>'
+warble history list --query 'Notes' --limit 20
+warble history show '<UUID>'
+warble history export > history-export.json
+warble settings show
+warble --json status
+```
+
+These commands return JSON on stdout, ISO-8601 dates, and exit 0. Failures return a JSON `error` on stderr and exit 1. Global `--json` and `--data-dir <directory>` go **before** the command. Data commands always return JSON; `status --json` is also accepted. Structured status reports paths and record counts, not daemon health.
+
+Quit Warble before dictionary writes. The CLI holds the daemon lock, rejects duplicate spoken text within a category, saves atomically and reads back the result. Remove entries by UUID, then add a new rule to replace one. Restart the app after changes. Reads never create, migrate or quarantine data; corrupt files fail rather than being overwritten. History and settings are read-only. Export writes JSON to stdout, not audio; do not redirect over application files.
+
+For isolated fixtures, use `warble --data-dir "$FIXTURE_DIR" dictionary words list`. This keeps dictionary, history, configuration and lock files in one directory. The option is not supported for daemon startup, transcription or legacy config mutations. Without it, the usual application data and config paths are used.
+
 Settings changed from the command line are picked up the next time Warble starts.
 
 ```bash

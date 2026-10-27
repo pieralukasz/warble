@@ -22,6 +22,20 @@ func printUsage() {
         warble status               Show configuration and status
         warble --help               Show this help message
 
+    DATA COMMANDS (JSON output; errors are JSON on stderr, exit 1):
+        warble dictionary words list|add <word>|remove <UUID>
+        warble dictionary replacements list|add <spoken> <written>|remove <UUID>
+        warble history list|export [--query <text>] [--limit <positive integer>]
+        warble history show <UUID>
+        warble settings show       Read settings without migration or writes
+        warble --json status       Data paths and record counts (not daemon health)
+
+    GLOBAL DATA OPTIONS (before the command):
+        --json                     Explicit JSON (data commands always use JSON)
+        --data-dir <directory>     Isolate dictionary, history, config and lock here
+    Quit Warble before dictionary writes. Export prints JSON to stdout.
+    These options do not apply to start, transcribe-file or legacy setting commands.
+
     HOTKEY EXAMPLES:
         warble set-hotkey globe             Globe/fn key (default)
         warble set-hotkey rightoption        Right Option key
@@ -172,6 +186,19 @@ func cmdTranscribeFile(_ path: String) {
 }
 
 let args = CommandLine.arguments
+let dataCommands = ["dictionary", "history", "settings", "--json", "--data-dir"]
+if let first = args.dropFirst().first, dataCommands.contains(first) || Array(args.dropFirst()) == ["status", "--json"] {
+    do {
+        let input = Array(args.dropFirst()) == ["status", "--json"] ? ["--json", "status"] : Array(args.dropFirst())
+        let invocation = try DataCLIInvocation(arguments: input)
+        print(try invocation.cli.run(invocation.arguments))
+        exit(0)
+    } catch {
+        let message = (try? DataCLI.json(["error": error.localizedDescription])) ?? "{\"error\":\"Command failed\"}"
+        fputs(message + "\n", stderr)
+        exit(1)
+    }
+}
 let rawCommand = args.count > 1 ? args[1] : nil
 let command: String? = {
     if let rawCommand, rawCommand.hasPrefix("-psn_") { return "start" }
