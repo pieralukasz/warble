@@ -26,6 +26,7 @@ final class DictationController {
     static let MINIMUM_RECORDING_SECONDS = 0.25
     static let CONFIRMATION_SECONDS = 1.2
     static let ERROR_SECONDS = 5.0
+    static let HINT_SECONDS = 2.5
 
     private let deps: Dependencies
     private var lifecycle = RecordingLifecycle()
@@ -45,24 +46,40 @@ final class DictationController {
 
     private var isToggleMode: Bool { config.toggleMode?.value ?? false }
 
-    func handleKeyDown() {
-        guard deps.appState.phase == .idle || deps.appState.phase == .recording || isTransient else { return }
-        switch lifecycle.keyDown(toggleMode: isToggleMode) {
-        case .startRecording: startRecording()
-        case .stopRecording: stopRecording()
-        case .none, .cancelRecording, .prepareRecorder: break
-        }
+    func handleKeyDown(kind: HotkeyKind = .key) {
+        guard canStartOrStop else { return }
+        perform(lifecycle.keyDown(toggleMode: isToggleMode, kind: kind))
     }
 
-    func handleKeyUp() {
-        if lifecycle.keyUp(toggleMode: isToggleMode) == .stopRecording {
-            stopRecording()
-        }
+    /// `wasChord` is true when the hotkey was part of a shortcut such as Right ⌘ C.
+    func handleKeyUp(kind: HotkeyKind = .key, wasChord: Bool = false) {
+        // In toggle mode a modifier hotkey starts and stops on release, so the
+        // release needs the same guard a press gets.
+        if isToggleMode && kind == .modifier && !canStartOrStop { return }
+        perform(lifecycle.keyUp(toggleMode: isToggleMode, kind: kind, wasChord: wasChord))
     }
 
     /// Drops the recording in progress when the Mac goes to sleep mid-dictation.
     func cancelForSleep() {
         guard lifecycle.systemWillSleep() == .cancelRecording else { return }
+        cancelRecording()
+    }
+
+    private var canStartOrStop: Bool {
+        deps.appState.phase == .idle || deps.appState.phase == .recording || isTransient
+    }
+
+    private func perform(_ action: RecordingLifecycle.Action) {
+        switch action {
+        case .startRecording: startRecording()
+        case .stopRecording: stopRecording()
+        case .cancelRecording: cancelRecording()
+        case .none, .prepareRecorder: break
+        }
+    }
+
+    /// Throws the recording away without transcribing it.
+    private func cancelRecording() {
         startTask?.cancel()
         startTask = nil
         deps.recorder.teardown()
@@ -148,7 +165,7 @@ final class DictationController {
         }
         let duration = Date().timeIntervalSince(session.startedAt)
         guard duration >= Self.MINIMUM_RECORDING_SECONDS else {
-            deps.appState.transition(to: .idle)
+            reportShortPress()
             return
         }
 
@@ -207,6 +224,15 @@ final class DictationController {
         print("Dictation produced no text: \(message)")
         deps.sounds.play(.failure)
         deps.appState.transition(to: .error(message), resetAfter: Self.ERROR_SECONDS)
+    }
+
+    /// A tap in hold mode used to vanish without a word, as if Warble ignored the key.
+    private func reportShortPress() {
+        guard let hint = ShortPress.hint(toggleMode: isToggleMode, hotkeys: config.hotkeys) else {
+            deps.appState.transition(to: .idle)
+            return
+        }
+        deps.appState.transition(to: .error(hint), resetAfter: Self.HINT_SECONDS)
     }
 
     private func discardSessionAudio() {

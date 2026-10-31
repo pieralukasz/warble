@@ -7,11 +7,15 @@ description: Hold to talk, toggle mode, and what happens between key press and t
 
 Hold the hotkey, speak, release. Warble plays a soft tick when it starts listening and a pop when it stops, then types the text at the cursor.
 
-Taps shorter than a quarter of a second are ignored, so brushing the key does nothing.
+A tap shorter than a quarter of a second records nothing, and the pill reminds you to hold the key.
+
+If the hotkey is a modifier such as Right ⌘, it still works in shortcuts. Pressing another key while it is down, as in Right ⌘ C, drops the recording instead of typing what the microphone heard.
 
 ## Toggle mode
 
 For long dictation, switch **Settings → Dictation → Mode** to **Press to start, press to stop**. Press once to start and again to finish.
+
+With a modifier hotkey such as Right ⌘, Warble starts and stops when you let go of the key, not when you press it. That way a shortcut like Right ⌘ V neither starts nor stops a dictation.
 
 ## What happens to your words
 

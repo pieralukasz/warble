@@ -1,5 +1,13 @@
 import Foundation
 
+/// A modifier-only hotkey such as Right ⌘ is also part of everyday shortcuts,
+/// and only its release tells a dictation press from a shortcut. A regular key
+/// can act on press.
+enum HotkeyKind: Equatable, Sendable {
+    case modifier
+    case key
+}
+
 struct RecordingLifecycle {
     enum Action: Equatable {
         case none
@@ -11,14 +19,12 @@ struct RecordingLifecycle {
 
     private(set) var isRecording = false
 
-    mutating func keyDown(toggleMode: Bool) -> Action {
+    mutating func keyDown(toggleMode: Bool, kind: HotkeyKind = .key) -> Action {
         if toggleMode {
-            if isRecording {
-                isRecording = false
-                return .stopRecording
-            }
-            isRecording = true
-            return .startRecording
+            // Pressing Right ⌘ for Right ⌘ V must not start a recording, and
+            // that is only known once the key comes back up.
+            guard kind == .key else { return .none }
+            return toggle()
         }
 
         guard !isRecording else { return .none }
@@ -26,10 +32,18 @@ struct RecordingLifecycle {
         return .startRecording
     }
 
-    mutating func keyUp(toggleMode: Bool) -> Action {
-        guard !toggleMode, isRecording else { return .none }
+    /// `wasChord` is true when another key went down while the hotkey was held.
+    mutating func keyUp(toggleMode: Bool, kind: HotkeyKind = .key, wasChord: Bool = false) -> Action {
+        if toggleMode {
+            guard kind == .modifier, !wasChord else { return .none }
+            return toggle()
+        }
+
+        guard isRecording else { return .none }
         isRecording = false
-        return .stopRecording
+        // Hold mode has to start on press; a shortcut found out on release is
+        // dropped instead of typing whatever the microphone heard meanwhile.
+        return wasChord ? .cancelRecording : .stopRecording
     }
 
     mutating func systemWillSleep() -> Action {
@@ -44,6 +58,11 @@ struct RecordingLifecycle {
 
     mutating func recordingStartFailed() {
         isRecording = false
+    }
+
+    private mutating func toggle() -> Action {
+        isRecording.toggle()
+        return isRecording ? .startRecording : .stopRecording
     }
 }
 

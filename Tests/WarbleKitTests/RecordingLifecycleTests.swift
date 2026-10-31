@@ -37,6 +37,50 @@ final class RecordingLifecycleTests: XCTestCase {
         XCTAssertEqual(lifecycle.keyUp(toggleMode: false), .stopRecording)
     }
 
+    func testToggleWithModifierHotkeyActsOnCleanRelease() {
+        var lifecycle = RecordingLifecycle()
+
+        XCTAssertEqual(lifecycle.keyDown(toggleMode: true, kind: .modifier), .none)
+        XCTAssertEqual(lifecycle.keyUp(toggleMode: true, kind: .modifier, wasChord: false), .startRecording)
+        XCTAssertEqual(lifecycle.keyDown(toggleMode: true, kind: .modifier), .none)
+        XCTAssertEqual(lifecycle.keyUp(toggleMode: true, kind: .modifier, wasChord: false), .stopRecording)
+        XCTAssertFalse(lifecycle.isRecording)
+    }
+
+    func testShortcutWithModifierHotkeyDoesNotStartToggleRecording() {
+        var lifecycle = RecordingLifecycle()
+
+        XCTAssertEqual(lifecycle.keyDown(toggleMode: true, kind: .modifier), .none)
+        XCTAssertEqual(lifecycle.keyUp(toggleMode: true, kind: .modifier, wasChord: true), .none)
+        XCTAssertFalse(lifecycle.isRecording)
+    }
+
+    func testShortcutDuringToggleRecordingKeepsRecording() {
+        var lifecycle = RecordingLifecycle()
+
+        _ = lifecycle.keyUp(toggleMode: true, kind: .modifier, wasChord: false)
+        XCTAssertEqual(lifecycle.keyDown(toggleMode: true, kind: .modifier), .none)
+        XCTAssertEqual(lifecycle.keyUp(toggleMode: true, kind: .modifier, wasChord: true), .none)
+        XCTAssertTrue(lifecycle.isRecording)
+    }
+
+    func testShortcutWithHoldHotkeyCancelsInsteadOfTranscribing() {
+        var lifecycle = RecordingLifecycle()
+
+        XCTAssertEqual(lifecycle.keyDown(toggleMode: false, kind: .modifier), .startRecording)
+        XCTAssertEqual(lifecycle.keyUp(toggleMode: false, kind: .modifier, wasChord: true), .cancelRecording)
+        XCTAssertFalse(lifecycle.isRecording)
+        XCTAssertEqual(lifecycle.keyDown(toggleMode: false, kind: .modifier), .startRecording)
+    }
+
+    func testToggleWithRegularKeyStillActsOnPress() {
+        var lifecycle = RecordingLifecycle()
+
+        XCTAssertEqual(lifecycle.keyDown(toggleMode: true, kind: .key), .startRecording)
+        XCTAssertEqual(lifecycle.keyUp(toggleMode: true, kind: .key, wasChord: false), .none)
+        XCTAssertEqual(lifecycle.keyDown(toggleMode: true, kind: .key), .stopRecording)
+    }
+
     func testWakePreparesOnlyWhenReady() {
         let lifecycle = RecordingLifecycle()
 

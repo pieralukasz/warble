@@ -132,8 +132,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func startListening() {
         hotkeys.listen(
             to: config.hotkeys,
-            onKeyDown: { [weak self] in self?.dictation.handleKeyDown() },
-            onKeyUp: { [weak self] in self?.dictation.handleKeyUp() }
+            onKeyDown: { [weak self] kind in self?.dictation.handleKeyDown(kind: kind) },
+            onKeyUp: { [weak self] kind, wasChord in
+                self?.dictation.handleKeyUp(kind: kind, wasChord: wasChord)
+            }
         )
         appState.transition(to: .idle)
         print("Warble v\(AppInfo.version) ready · hotkey \(config.hotkeySummary()) · Parakeet v3")

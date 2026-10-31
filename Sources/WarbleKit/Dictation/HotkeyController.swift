@@ -7,7 +7,11 @@ final class HotkeyController {
 
     var isListening: Bool { !managers.isEmpty }
 
-    func listen(to hotkeys: [HotkeyConfig], onKeyDown: @escaping () -> Void, onKeyUp: @escaping () -> Void) {
+    func listen(
+        to hotkeys: [HotkeyConfig],
+        onKeyDown: @escaping (HotkeyKind) -> Void,
+        onKeyUp: @escaping (HotkeyKind, _ wasChord: Bool) -> Void
+    ) {
         stop()
         managers = hotkeys.map { hotkey in
             let manager = HotkeyManager(keyCode: hotkey.keyCode, modifiers: hotkey.modifierFlags)
